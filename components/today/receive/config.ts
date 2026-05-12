@@ -1,11 +1,13 @@
+import { getDailyReceiveQuote } from "./dailyQuotes";
+
 /**
  * Receive landing — copy, timing, and tuning.
- * Swap strings / durations here; wire assets and motion in step components later.
+ * Daily quote: categorized lists in `dailyQuotes.ts` (`DAILY_QUOTES`, `QUOTE_CATEGORY_ORDER`).
  */
 export const receiveCopy = {
   heading: "Today’s Message",
-  /** Shown after the heading slides to the top */
-  quote: "Stay grounded. Move with purpose.",
+  /** Shown after the heading slides to the top — from `dailyQuotes.ts` by local calendar day. */
+  quote: getDailyReceiveQuote(),
   continueCta: "Continue to reflect",
   /** Optional label above ponder UI (localize later) */
   ponderHint: "Take a moment with this",

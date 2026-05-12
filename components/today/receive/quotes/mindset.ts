@@ -1,0 +1,21 @@
+/** Thoughts, clarity, attention, and framing. */
+export const mindsetQuotes = [
+  "Treat things for what they’re worth",
+  "Complaints, worries, opinions, and others are out of our control",
+  "The best math is calculating your decisions",
+  "IF YOU CAN OVERTHINK THE WORST, YOU CAN OVERTHINK THE BEST.",
+  "Clarity over imagination",
+  "Patterns repeat until you learn your lessons",
+  "Cloudiness comes from over consumption",
+  "Your brain doesn’t chase goals—it follows attention",
+  "What would the best version of me do in this situation",
+  "Always assume positive intent",
+  "Winning doesn’t come from certainty—it comes from not doubting",
+  "If someone could only see your actions and not hear your words, what would they say your priorities are?",
+  "People only see the decisions you made, not the choices you had.",
+  "What you need is often not what you want",
+  "Find out.",
+  "Cut slavery to desire and gain clarity with sharp purpose and intentional decisions",
+  "Confident enough to start. Humble enough to keep learning.",
+  "Pleasure or purpose—seeking identity",
+] as const;

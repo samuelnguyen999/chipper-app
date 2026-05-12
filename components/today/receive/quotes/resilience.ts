@@ -1,0 +1,23 @@
+/** Fear, failure, discomfort, pressure, and staying in the fight when it hurts. */
+export const resilienceQuotes = [
+  "Life gets better with change, not chance",
+  "Fear is your biology trying to catch up with your expansion",
+  "Break the pattern. That pain doesn’t kill you—it builds you",
+  "Pain is temporary; quitting lasts forever",
+  "The harder it is, the better you feel",
+  "The greater the challenge, the greater the reward",
+  "Every failure whispers a secret for the next win",
+  "Tolerate and face the unknown",
+  "Always go with the choice that scares you most",
+  "If you live a life like everyone else, never expect to be great",
+  "People who died yesterday had plans for today",
+  "A man who avoids struggles is a slave to comfort",
+  "Increase your tolerance to stress",
+  "Progress requires tolerance for imperfection",
+  "You will lose everything if you chase nothing",
+  "If you knew you would succeed after failing 50 times, how fast would you fail?",
+  "If you don’t sacrifice for what you want, what you want becomes the sacrifice.",
+  "Those who do not move do not notice their chains.",
+  "Fear doesn’t stop death—it stops life.",
+  "Position yourself to succeed even if things don’t go your way",
+] as const;
