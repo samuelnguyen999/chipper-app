@@ -9,16 +9,16 @@ import Animated, {
 } from "react-native-reanimated";
 import { layout, spacing } from "../../../constants";
 import { receiveCopy, receiveTiming } from "./config";
+import { useLandingFlow } from "./flow";
 import ReceiveLandingPonderCtaSlot from "./parts/PonderCtaSlot";
 import ReceiveLandingPonderHint from "./parts/PonderHint";
 import ReceiveLandingHeading from "./parts/Heading";
 import ReceiveLandingQuote from "./parts/Quote";
-import { useReceiveLandingFlow } from "./useReceiveLandingFlow";
 
-type ReceiveLandingProps = { onContinueToReflect: () => void };
+type LandingProps = { onContinueToReflect: () => void };
 
-export default function ReceiveLanding({ onContinueToReflect }: ReceiveLandingProps) {
-  const { phase, ponderProgress, completeHeadingSlide } = useReceiveLandingFlow();
+export default function Landing({ onContinueToReflect }: LandingProps) {
+  const { phase, ponderProgress, completeHeadingSlide } = useLandingFlow();
   const [containerHeight, setContainerHeight] = useState(0);
   const [headingHeight, setHeadingHeight] = useState(0);
   const translateY = useSharedValue(0);

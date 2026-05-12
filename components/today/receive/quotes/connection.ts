@@ -10,7 +10,7 @@ export const connectionQuotes = [
   "Be the first to reach out",
   "Listen more than you defend",
   "Your presence is a gift—give it generously",
-  "Community sharpens iron; don’t go it alone",
+  "Community sharpens iron; don’t go through alone",
   "Speak truth with kindness, not silence with resentment",
   "What you tolerate teaches others how to treat you—and how to treat themselves",
   "Honor people even when you disagree",

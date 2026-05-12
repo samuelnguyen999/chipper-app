@@ -1,21 +1,28 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { receiveTiming } from "./config";
-import type { ReceiveLandingPhase } from "./types";
 
-type UseReceiveLandingFlowResult = {
-  phase: ReceiveLandingPhase;
-  /** 0–100 while pondering; 100 when continue_ready */
+/**
+ * Phases for receive landing. Order is fixed; transitions live in `useLandingFlow`.
+ */
+export type LandingPhase =
+  | "message_only"
+  | "heading_sliding"
+  | "quote_visible"
+  | "pondering"
+  | "continue_ready";
+
+type UseLandingFlowResult = {
+  phase: LandingPhase;
   ponderProgress: number;
-  /** Call when the heading slide animation has finished (Reanimated completion). */
   completeHeadingSlide: () => void;
 };
 
 /**
- * Centralizes timers and phase order. Heading motion is driven in the UI; this hook
- * exposes `completeHeadingSlide` to advance after the slide.
+ * Timers and phase order. Heading motion is driven in `landing.tsx`;
+ * call `completeHeadingSlide` when the slide animation finishes.
  */
-export function useReceiveLandingFlow(): UseReceiveLandingFlowResult {
-  const [phase, setPhase] = useState<ReceiveLandingPhase>("message_only");
+export function useLandingFlow(): UseLandingFlowResult {
+  const [phase, setPhase] = useState<LandingPhase>("message_only");
   const [ponderProgress, setPonderProgress] = useState(0);
   const ponderFrameRef = useRef<number | null>(null);
 
