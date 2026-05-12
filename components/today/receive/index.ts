@@ -1,7 +1,7 @@
 export { receiveCopy, receiveTiming } from "./config";
-export type { ReceiveLandingPhase } from "./types";
-export { useReceiveLandingFlow } from "./useReceiveLandingFlow";
-export { default } from "./ReceiveLanding";
+export type { LandingPhase, LandingPhase as ReceiveLandingPhase } from "./flow";
+export { useLandingFlow, useLandingFlow as useReceiveLandingFlow } from "./flow";
+export { default } from "./landing";
 export { default as ReceiveLandingHeading } from "./parts/Heading";
 export { default as ReceiveLandingQuote } from "./parts/Quote";
 export { default as ReceiveLandingPonderCtaSlot } from "./parts/PonderCtaSlot";

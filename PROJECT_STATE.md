@@ -66,7 +66,7 @@
 | Feature | Folder | Notes |
 |---|---|---|
 | Today (experience + recap) | `components/today/` | Hosts locked flow and post-unlock recap surface. |
-| Receive | `components/today/receive/` | Copy/timing config, phase hook, landing component, and presentational parts. |
+| Receive | `components/today/receive/` | `config`, `flow`, `landing`, `quotes/*`, `parts/*` — see **`RECEIVE_STATE.md`** for architecture, tradeoffs, and review checklist. |
 | Reflect | `components/today/reflect/` | Choice config, list/focus views, and response submit wiring. |
 | Community | `components/community/` | Reads reflection responses and renders cards. |
 

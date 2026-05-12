@@ -10,7 +10,7 @@ export const identityQuotes = [
   "Act like the person you want to become",
   "In order to grow, a part of you must die",
   "Shaped by obedience, not emotion",
-  "Be. Do. Have. First, be the person you want to be, and do those things that person does, then you'll have that life you've been wanting",
+  "Be. Do. Have. First, become the person you want to be. Then do the things that person would do, and you’ll have created the life you’ve been wanting.",
   "This year doesn’t need perfection. It needs intention.",
   "The next chapter isn’t written by accident",
   "You’re not good enough to be disappointed",

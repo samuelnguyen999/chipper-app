@@ -1,8 +1,8 @@
-import { getDailyReceiveQuote } from "./dailyQuotes";
+import { getDailyReceiveQuote } from "./quotes/dailyQuotes";
 
 /**
  * Receive landing — copy, timing, and tuning.
- * Daily quote: weekday → lane in `dailyQuotes.ts` (`WEEKDAY_TO_CATEGORY`); pool per lane in `quotes/*.ts`.
+ * Daily quote: `quotes/dailyQuotes.ts` (weekday lane + pools in `quotes/*.ts`).
  */
 export const receiveCopy = {
   heading: "Today’s Message",
