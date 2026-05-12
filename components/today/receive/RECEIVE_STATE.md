@@ -8,11 +8,11 @@ This file documents the **locked Today receive experience** implemented in `comp
   - `receiveCopy` contains user-facing receive text (`heading`, `quote`, `ponderHint`, CTA label).
   - `receiveTiming` contains all phase timings and animation durations.
 - `dailyQuotes.ts`
-  - Imports `./quotes/*.ts` and builds `DAILY_QUOTES` + `QUOTE_CATEGORY_ORDER`.
-  - `getDailyReceiveQuote()` picks by local calendar day without flattening all quotes up front.
-  - `getQuotesForCategory()` for screens that only need one bucket.
-- `quotes/` (one file per category)
-  - `faith.ts`, `action.ts`, `discipline.ts`, `mindset.ts`, `identity.ts`, `resilience.ts` — edit these to add/reorder quotes.
+  - **`WEEKDAY_TO_CATEGORY`**: maps local weekday → lane (Sun action … Sat faith).
+  - **`getDailyReceiveQuote()`**: weekday picks **category**; **day-of-year** picks index inside that category’s list.
+  - **`getCategoryForWeekday()`** / **`getQuotesForCategory()`** for debugging or UI that shows the lane.
+- `quotes/` (one file per lane)
+  - `faith.ts`, `action.ts`, `discipline.ts`, `mindset.ts`, `identity.ts`, `resilience.ts`, **`connection.ts`** — edit these to add/reorder quotes.
 - `useReceiveLandingFlow.ts`
   - Owns phase progression and ponder progress updates.
 - `ReceiveLanding.tsx`
@@ -37,9 +37,23 @@ This file documents the **locked Today receive experience** implemented in `comp
 - `PonderCtaSlot` expects `progress` from 0..100 and switches from progress fill to CTA using `showButton`.
 - `ReceiveQuote` content should come from `receiveCopy.quote` to keep locked Today and recap consistent.
 
-## Rotation workflow (daily quote updates)
+## Weekday → category (receive quote lane)
 
-1. Add or edit strings in **`quotes/<category>.ts`** (keep each quote on its own string entry).
-2. To change rotation order across categories, edit **`QUOTE_CATEGORY_ORDER`** in **`dailyQuotes.ts`**.
+| Local weekday | Category |
+|---|---|
+| Sunday | action |
+| Monday | identity |
+| Tuesday | discipline |
+| Wednesday | mindset |
+| Thursday | resilience |
+| Friday | connection |
+| Saturday | faith |
+
+Within that day’s list, the quote still changes across the year (`day-of-year % list.length`).
+
+## Rotation workflow (quote content)
+
+1. Add or edit strings in **`quotes/<category>.ts`**.
+2. To change **which day gets which lane**, edit **`WEEKDAY_TO_CATEGORY`** in **`dailyQuotes.ts`** (order is Sun→Sat, index `Date.getDay()`).
 
 For **heading / CTA / ponder hint** copy, still edit `receiveCopy` in **`config.ts`**.

@@ -1,4 +1,4 @@
-/** Fear, failure, discomfort, pressure, and staying in the fight when it hurts. */
+/** Fear, failure, discomfort, pressure, staying in the fight. Thursday */
 export const resilienceQuotes = [
   "Life gets better with change, not chance",
   "Fear is your biology trying to catch up with your expansion",
@@ -20,4 +20,11 @@ export const resilienceQuotes = [
   "Those who do not move do not notice their chains.",
   "Fear doesn’t stop death—it stops life.",
   "Position yourself to succeed even if things don’t go your way",
+  "Be willing to face criticism and discomfort",
+  "If you get hit, it’s your choice to stay down or get back up",
+  "When you choose suffering, you give up on what you wanted most",
+  "Get excited when you’re told no—and believe you’ll be back, stronger",
+  "Come back again and again at that wall—and you’ll have a breakthrough",
+  "Where your fear is, there is your task",
+  "Pain brings out passion and aliveness",
 ] as const;

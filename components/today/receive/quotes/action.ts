@@ -1,4 +1,4 @@
-/** Motion, execution, hustle, and doing the work. */
+/** Motion, execution, hustle, and doing the work. Sunday */
 export const actionQuotes = [
   "Outwork yourself to stack momentum",
   "Action will reset emotion faster than thinking",
@@ -9,17 +9,25 @@ export const actionQuotes = [
   "Time is fleeting. Take action",
   "No shortcuts, no magical words—just hustle",
   "Stay in the fight. Life replaces quitters faster than you think",
-  "Fuck plan B. You have to make this shit happen.",
+  "Plan B is optional; commitment isn’t—make it happen.",
   "Respect is earned by action, not by being nice",
   "Do so much work that it’ll be unreasonable for you to not succeed",
   "Be useful or be forgotten",
   "Every hour you slack, someone hungrier gets what should’ve been yours",
   "If you’d reflect on your downfall, you wouldn’t pause for a breath",
   "The world shows mercy to no one—especially the ones who hesitate",
-  "Built the boat",
   "Do things you don’t want to do",
   "Good intentions → aligned actions",
   "Meet opportunity with preparation",
   "Every step is important",
   "Every morning you have two choices: continue to sleep with your dreams or wake up and chase them",
+  "Life by design or life by default",
+  "Retain a higher vibration",
+  "Raise standards and discernment",
+  "The only way to help the future is with the present",
+  "What you’re not changing, you’re choosing",
+  "Doing things reveals the next step",
+  "More experience, more clarity",
+  "Autotelicity: love and play in the work",
+  "Mastery: thirst to become excellent",
 ] as const;

@@ -1,4 +1,4 @@
-/** Habits, environment, standards, and sustained effort. */
+/** Habits, environment, standards, and sustained effort. Tuesday */
 export const disciplineQuotes = [
   "How you do the small things is how you do everything",
   "The more disciplined your environment is, the less disciplined you need to be",
@@ -12,7 +12,18 @@ export const disciplineQuotes = [
   "New goals don’t deliver new results. New lifestyles do",
   "It’s okay to suck; it’s not okay to skip",
   "Be the person known to do hard things",
-  "THE BEST INVESTMENT YOU CAN MAKE IS AN INVESTMENT IN YOURSELF. THE MORE YOU LEARN, THE MORE YOU’LL EARN.",
+  "The best investment you can make is an investment in yourself. The more you learn, the more you’ll earn.",
   "Feelings-based or duty-based",
   "Momentum forgives mistakes. Hesitation charges interest.",
+  "Clear mind, simple discipline",
+  "Attack the opportunities in front of you",
+  "If it matters to you, you will make time",
+  "Don’t be patient with input; be patient with output",
+  "Don’t count your days—make your days count",
+  "Pain avoided is pain multiplied",
+  "Winning is better than comfort",
+  "Comfort dulls your edge",
+  "Be intentional with time—time wasted compounds",
+  "Knowing better changes nothing without doing better",
+  "To know something and not apply it is to not know it",
 ] as const;

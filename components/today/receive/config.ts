@@ -2,7 +2,7 @@ import { getDailyReceiveQuote } from "./dailyQuotes";
 
 /**
  * Receive landing — copy, timing, and tuning.
- * Daily quote: categorized lists in `dailyQuotes.ts` (`DAILY_QUOTES`, `QUOTE_CATEGORY_ORDER`).
+ * Daily quote: weekday → lane in `dailyQuotes.ts` (`WEEKDAY_TO_CATEGORY`); pool per lane in `quotes/*.ts`.
  */
 export const receiveCopy = {
   heading: "Today’s Message",

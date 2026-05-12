@@ -1,4 +1,4 @@
-/** Who you are becoming, integrity, and self-leadership. */
+/** Who you are becoming, integrity, and self-leadership. Monday */
 export const identityQuotes = [
   "Master self > chasing external",
   "No other person needs to change for me to win",
@@ -10,10 +10,14 @@ export const identityQuotes = [
   "Act like the person you want to become",
   "In order to grow, a part of you must die",
   "Shaped by obedience, not emotion",
-  "Be. Do. Have.",
+  "Be. Do. Have. First, be the person you want to be, and do those things that person does, then you'll have that life you've been wanting",
   "This year doesn’t need perfection. It needs intention.",
   "The next chapter isn’t written by accident",
   "You’re not good enough to be disappointed",
-  "Serve others to gain fulfillment",
   "You are ten times stronger than you could ever imagine",
+  "Don’t put yourself in situations where your spirit shrinks",
+  "Don’t downplay your calling for others",
+  "The more you know yourself, the more power you have",
+  "Let go of the need to be understood",
+  "More battles, more wins",
 ] as const;
