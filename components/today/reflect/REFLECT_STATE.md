@@ -1,35 +1,122 @@
-# Reflect Flow Reference
+# Reflect flow — architecture reference
 
-This file documents the **reflect flow** under `components/today/reflect/`.
+**Scope:** This folder implements the **Reflect** half of **locked Today** (`TodayExperience` → Receive `Landing` → **Reflect**). It runs **after** the user finishes Receive (ponder CTA). Post-unlock **Today** tab does not re-host this screen; it is specific to the **pre-unlock** path unless you intentionally reuse `Reflect` elsewhere.
 
-## Source of truth
+**Audience:** Future agents and humans doing review or adaptation—read **`../receive/RECEIVE_STATE.md`** first for locked Today context, then this file before changing lenses, copy, submit/unlock wiring, or shared card chrome.
 
-- `config.ts`
-  - `reflectionPromptByMode` is the rotating prompt map.
-  - `reflectionChoices` derives mode/purpose/prompt entries used by UI.
-- `Reflect.tsx`
-  - Orchestrates list view vs focus view and unlock behavior.
-- `ReflectionChoiceCard.tsx`
-  - Card UI for each lens choice (mode/purpose/prompt).
-- `ReflectionFocusView.tsx`
-  - Focused writing view and submission handling UI.
-- `state/ReflectionResponsesContext.tsx` (shared state)
-  - Stores submitted responses in-memory.
+---
+
+## Folder layout (importance order)
+
+| Layer | Path | Responsibility |
+|---|---|---|
+| Copy + lens list | `config.ts` | `reflectionPromptByMode`, `reflectionChoices`, `ReflectionChoice` type. |
+| UI orchestration | `Reflect.tsx` | List vs focus view, safe-area padding when tabs locked, submit → `addResponse` → `unlockMainTabs` → `onUnlocked`. |
+| Atoms | `parts/*` | Presentational only — no tab unlock or global response writes. |
+| Public API | `index.ts` | Default **`Reflect`**, config exports. |
+
+**Design rule:** `Reflect.tsx` owns **navigation between list and focus** and **unlock side effects**; `parts/FocusView` owns **keyboard submit UX** and calls `onSubmitResponse` only; it must not call `unlockMainTabs` directly.
+
+---
+
+## View lifecycle (list ↔ focus)
+
+| State | What the user sees |
+|---|---|
+| **List** | Header + stacked **`ChoiceCard`** rows from `reflectionChoices`. |
+| **Focus** | **`FocusView`** for the selected `ReflectionChoice`: back control, prompt, `TextInput`, submit on keyboard **Done** (trimmed non-empty only). |
+
+| Transition | Trigger |
+|---|---|
+| List → Focus | Tap prompt area on a **`ChoiceCard`**. |
+| Focus → List | Back row **or** successful submit ( **`FocusView`** clears draft and calls `onBack` after `onSubmitResponse`). |
+
+---
 
 ## Submission and unlock behavior
 
-- On submit in `ReflectionFocusView`, `Reflect.tsx` calls:
-  1. `addResponse({ mode, prompt, response })`
-  2. if `true`, then `unlockMainTabs()`
-  3. optional `onUnlocked()` callback (used by locked route to `router.replace("/(tabs)")`)
+On submit from **`FocusView`** (keyboard Done with non-empty trimmed text), **`Reflect.tsx`** `onSubmitResponse`:
+
+1. `addResponse({ mode, prompt, response })` from **`ReflectionResponsesContext`** — returns **`false`** if empty after trim (should not happen if `FocusView` guards correctly).
+2. If **`true`**: `unlockMainTabs()` from **`TabAccessContext`**.
+3. Then optional **`onUnlocked()`** (locked route uses this for `router.replace("/(tabs)")`).
+
+---
 
 ## Reflection response state contract
 
 | API | Behavior |
 |---|---|
 | `addResponse({ mode, prompt, response })` | Trims response; returns `false` on empty input; otherwise prepends a new entry and returns `true`. |
-| `responses` | Ordered newest-first and consumed by Community cards (and any recap that uses submitted data). |
+| `responses` | Ordered newest-first; consumed by Community and any recap that reads submitted data. |
+
+---
 
 ## Rotation workflow (daily prompt updates)
 
-Update `reflectionPromptByMode` in `config.ts` to rotate prompts while preserving stable `mode` and `purpose` semantics.
+Update **`reflectionPromptByMode`** in **`config.ts`** while keeping stable **`mode`** and **`purpose`** strings (Community and stored rows key off them).
+
+---
+
+## Integration points (rest of app)
+
+- **`components/today/TodayExperience.tsx`** — default-imports **`./reflect`** (`Reflect`); toggles from Receive landing to Reflect after CTA.
+- **`app/(locked)/index.tsx`** — passes **`onUnlocked`** into Today / Reflect for route replace after first valid submit (see Receive doc integration table).
+- **`state/ReflectionResponsesContext.tsx`** — in-memory responses (not persisted).
+- **`components/community/CommunityReflectionCard.tsx`** — default-imports **`CardShell`** from **`../today/reflect/parts/CardShell`** so Community does not pull **`Reflect.tsx`** through the barrel (keeps chunks and init order predictable).
+
+---
+
+## Parts map
+
+| File | Role |
+|---|---|
+| `parts/CardShell.tsx` | Shared bordered surface (Reflect choices + Community cards). |
+| `parts/ChoiceCard.tsx` | Lens row: purpose toggle, animated purpose reveal, tappable prompt. |
+| `parts/FocusView.tsx` | Reanimated entrance per mode, back, input, Done → submit callback. |
+
+---
+
+## Pros / cons (current state)
+
+| Pros | Cons / risks |
+|---|---|
+| **Thin orchestrator** — `Reflect.tsx` stays small and readable. | **In-memory only** — responses lost on reload (see `PROJECT_STATE.md`). |
+| **`parts/`** mirrors Receive’s presentational split. | **Duplicated mode→animation map** in `FocusView` (`variantForMode`) must stay aligned if you add lenses in `config`. |
+| **`CardShell`** reused in Community for visual consistency. | **Cross-import path:** Community imports **`parts/CardShell`** directly so the **`reflect`** barrel does not pull **`Reflect`** into unrelated routes. |
+
+---
+
+## Future adaptations (recipes)
+
+| Goal | Where to change |
+|---|---|
+| New lens | Extend `REFLECTION_LENSES` + `reflectionPromptByMode` in `config.ts`; add `variantForMode` branch in `parts/FocusView.tsx` if you want a distinct entrance. |
+| Persist responses | Introduce storage or API in **`ReflectionResponsesContext`** (or a service it calls)—keep **`Reflect`** submit contract the same. |
+| Different unlock rule | Adjust **`Reflect.tsx`** only; do not scatter `unlockMainTabs` into `parts/*`. |
+| Community card chrome diverges | Fork shell or pass variants from **`CardShell`** props—coordinate with Reflect cards. |
+
+---
+
+## Review checklist (PRs touching Reflect)
+
+- [ ] View lifecycle table above still matches **`Reflect.tsx`** + **`parts/FocusView.tsx`**.
+- [ ] First successful submit still calls **`unlockMainTabs`** at most once per successful **`addResponse(true)`** path.
+- [ ] `parts/*` files do not import **`TabAccessContext`** or **`ReflectionResponsesContext`**.
+- [ ] If **`config.ts`** lens list changed: run `npx tsc --noEmit` and smoke **locked Today** through Receive → Reflect → tabs.
+
+---
+
+## Quick edit map
+
+| Change | File |
+|---|---|
+| Lens names, purposes, prompts | `config.ts` |
+| List layout, header copy | `Reflect.tsx` |
+| Card chrome (border, padding) | `parts/CardShell.tsx` |
+| Purpose toggle / prompt press target | `parts/ChoiceCard.tsx` |
+| Entrance motion, input submit UX | `parts/FocusView.tsx` |
+
+---
+
+*Keep this file in sync when Reflect architecture or unlock wiring changes.*

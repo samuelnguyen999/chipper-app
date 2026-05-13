@@ -1,16 +1,16 @@
 import { useEffect, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import Animated, { useAnimatedStyle, useSharedValue, withSpring } from "react-native-reanimated";
-import { colors, fontSize, fontWeight, layout, screen, spacing, textStyles } from "../../../constants";
+import { colors, fontSize, fontWeight, layout, screen, spacing, textStyles } from "../../../../constants";
 
-export type ReflectionFocusChoice = {
+export type FocusChoice = {
   mode: string;
   prompt: string;
   purpose: string;
 };
 
-type ReflectionFocusViewProps = {
-  choice: ReflectionFocusChoice;
+type FocusViewProps = {
+  choice: FocusChoice;
   onBack: () => void;
   contentBottomInset?: number;
   onSubmitResponse: (input: { mode: string; prompt: string; response: string }) => void;
@@ -22,10 +22,14 @@ const SPRING_SOFT = { damping: 16, stiffness: 170, mass: 1 };
 
 function variantForMode(mode: string): LensVariant {
   switch (mode) {
-    case "Ground": return "zoom";
-    case "Understand": return "stretchY";
-    case "Align": return "stretchX";
-    default: return "zoom";
+    case "Ground":
+      return "zoom";
+    case "Understand":
+      return "stretchY";
+    case "Align":
+      return "stretchX";
+    default:
+      return "zoom";
   }
 }
 
@@ -39,29 +43,52 @@ function useLensEntrance(mode: string) {
   useEffect(() => {
     const variant = variantForMode(mode);
     if (variant === "zoom") {
-      opacity.value = 0; scale.value = 0.82; scaleX.value = 1; scaleY.value = 1; translateY.value = 0;
-      opacity.value = withSpring(1, SPRING_GROUND); scale.value = withSpring(1, SPRING_GROUND); return;
+      opacity.value = 0;
+      scale.value = 0.82;
+      scaleX.value = 1;
+      scaleY.value = 1;
+      translateY.value = 0;
+      opacity.value = withSpring(1, SPRING_GROUND);
+      scale.value = withSpring(1, SPRING_GROUND);
+      return;
     }
     if (variant === "stretchY") {
-      opacity.value = 0; scale.value = 1; scaleX.value = 1; scaleY.value = 0.08; translateY.value = 44;
-      opacity.value = withSpring(1, SPRING_SOFT); scaleY.value = withSpring(1, SPRING_SOFT); translateY.value = withSpring(0, SPRING_SOFT); return;
+      opacity.value = 0;
+      scale.value = 1;
+      scaleX.value = 1;
+      scaleY.value = 0.08;
+      translateY.value = 44;
+      opacity.value = withSpring(1, SPRING_SOFT);
+      scaleY.value = withSpring(1, SPRING_SOFT);
+      translateY.value = withSpring(0, SPRING_SOFT);
+      return;
     }
-    opacity.value = 0; scale.value = 1; scaleX.value = 0.08; scaleY.value = 1; translateY.value = 0;
-    opacity.value = withSpring(1, SPRING_SOFT); scaleX.value = withSpring(1, SPRING_SOFT);
+    opacity.value = 0;
+    scale.value = 1;
+    scaleX.value = 0.08;
+    scaleY.value = 1;
+    translateY.value = 0;
+    opacity.value = withSpring(1, SPRING_SOFT);
+    scaleX.value = withSpring(1, SPRING_SOFT);
   }, [mode]);
 
   return useAnimatedStyle(() => ({
     opacity: opacity.value,
-    transform: [{ translateY: translateY.value }, { scale: scale.value }, { scaleX: scaleX.value }, { scaleY: scaleY.value }],
+    transform: [
+      { translateY: translateY.value },
+      { scale: scale.value },
+      { scaleX: scaleX.value },
+      { scaleY: scaleY.value },
+    ],
   }));
 }
 
-export default function ReflectionFocusView({
+export default function FocusView({
   choice,
   onBack,
   contentBottomInset = 0,
   onSubmitResponse,
-}: ReflectionFocusViewProps) {
+}: FocusViewProps) {
   const { mode, prompt } = choice;
   const animatedStyle = useLensEntrance(mode);
   const [response, setResponse] = useState("");
@@ -70,7 +97,10 @@ export default function ReflectionFocusView({
   return (
     <ScrollView
       style={screen.scroll}
-      contentContainerStyle={[styles.scrollContent, { ...screen.scrollContent, paddingBottom: layout.screenScrollBottomPadding + contentBottomInset }]}
+      contentContainerStyle={[
+        styles.scrollContent,
+        { ...screen.scrollContent, paddingBottom: layout.screenScrollBottomPadding + contentBottomInset },
+      ]}
       keyboardShouldPersistTaps="handled"
       showsVerticalScrollIndicator={false}
     >
@@ -123,7 +153,13 @@ const styles = StyleSheet.create({
   prompt: { fontSize: fontSize.title + 2, fontWeight: fontWeight.semibold, color: colors.text, lineHeight: 34, marginBottom: spacing.xxl },
   responseLabel: { ...textStyles.caption, marginTop: spacing.xxl, marginBottom: spacing.sm, textTransform: "uppercase", letterSpacing: 0.5 },
   responseInput: {
-    borderWidth: 1, borderColor: colors.borderSubtle, borderRadius: spacing.sm, backgroundColor: colors.surfaceCard, color: colors.text,
-    fontSize: fontSize.md, paddingHorizontal: spacing.md, paddingVertical: spacing.md,
+    borderWidth: 1,
+    borderColor: colors.borderSubtle,
+    borderRadius: spacing.sm,
+    backgroundColor: colors.surfaceCard,
+    color: colors.text,
+    fontSize: fontSize.md,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.md,
   },
 });

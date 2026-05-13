@@ -1,24 +1,24 @@
 const REFLECTION_LENSES = [
   {
-    mode: "Ground",
+    mode: "Release",
     purpose:
-      "Bring awareness to the present moment before deeper thinking happens.",
+      "Create space to unload thoughts, emotions, and emotional weight.",
   },
   {
     mode: "Understand",
-    purpose: "Help users understand what’s happening internally and relationally.",
+    purpose: "Bring clarity to what’s being felt, needed, or experienced internally.",
   },
   {
-    mode: "Align",
+    mode: "Move",
     purpose:
-      "Close the loop so reflection doesn’t stay internal—it becomes lived change.",
+      "Reconnect with intention, direction, and meaningful next steps.",
   },
 ] as const;
 
 export const reflectionPromptByMode = {
-  Ground: "Where am I right now?",
+  Release: "Where am I right now?",
   Understand: "What’s going on?",
-  Align: "What do I do with this?",
+  Move: "What do I do with this?",
 } as const;
 
 export const reflectionChoices = REFLECTION_LENSES.map((lens) => ({

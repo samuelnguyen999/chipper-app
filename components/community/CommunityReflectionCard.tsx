@@ -7,7 +7,7 @@ import {
   spacing,
   textStyles,
 } from "../../constants";
-import ReflectionCardShell from "../today/reflect/ReflectionCardShell";
+import CardShell from "../today/reflect/parts/CardShell";
 
 type CommunityReflectionCardProps = {
   mode: string;
@@ -21,7 +21,7 @@ export default function CommunityReflectionCard({
   response,
 }: CommunityReflectionCardProps) {
   return (
-    <ReflectionCardShell>
+    <CardShell>
       <View style={styles.leadRow}>
         <Text style={styles.mode}>{mode}</Text>
         <Text style={styles.leadMuted}> → </Text>
@@ -29,7 +29,7 @@ export default function CommunityReflectionCard({
       </View>
       <Text style={styles.responseLabel}>Response</Text>
       <Text style={styles.response}>{response}</Text>
-    </ReflectionCardShell>
+    </CardShell>
   );
 }
 

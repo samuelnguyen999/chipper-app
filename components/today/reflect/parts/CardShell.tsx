@@ -1,18 +1,14 @@
 import type { ReactNode } from "react";
 import { StyleSheet, View, type StyleProp, type ViewStyle } from "react-native";
-import { colors, radii, spacing } from "../../../constants";
+import { colors, radii, spacing } from "../../../../constants";
 
-type ReflectionCardShellProps = {
+type CardShellProps = {
   children: ReactNode;
   selected?: boolean;
   style?: StyleProp<ViewStyle>;
 };
 
-export default function ReflectionCardShell({
-  children,
-  selected = false,
-  style,
-}: ReflectionCardShellProps) {
+export default function CardShell({ children, selected = false, style }: CardShellProps) {
   return (
     <View style={[styles.card, selected && styles.cardSelected, style]}>
       {children}

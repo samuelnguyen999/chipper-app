@@ -5,8 +5,8 @@ import { layout, screen, textStyles } from "../../../constants";
 import { useReflectionResponses } from "../../../state/ReflectionResponsesContext";
 import { useTabAccess } from "../../../state/TabAccessContext";
 import { reflectionChoices, type ReflectionChoice } from "./config";
-import ReflectionChoiceCard from "./ReflectionChoiceCard";
-import ReflectionFocusView from "./ReflectionFocusView";
+import ReflectCardStack from "./parts/ReflectCardStack";
+import FocusView from "./parts/FocusView";
 
 type ReflectProps = { onUnlocked?: () => void };
 
@@ -20,7 +20,7 @@ export default function Reflect({ onUnlocked }: ReflectProps) {
 
   if (focusedChoice) {
     return (
-      <ReflectionFocusView
+      <FocusView
         choice={focusedChoice}
         onBack={() => setFocusedChoice(null)}
         contentBottomInset={!mainTabsUnlocked ? insets.bottom : 0}
@@ -38,19 +38,10 @@ export default function Reflect({ onUnlocked }: ReflectProps) {
     <View style={[screen.fill, { paddingTop: layout.screenPadding, paddingHorizontal: layout.screenPadding, paddingBottom: bottomPad }]}>
       <View style={styles.header}>
         <Text style={styles.title}>Reflect</Text>
-        <Text style={textStyles.screenSubtitle}>Choose a lens—each opens a different way into reflection.</Text>
+        <Text style={textStyles.screenSubtitle}>Choose a lens — pick the reflection that fits today.</Text>
       </View>
       <View style={styles.cards}>
-        {reflectionChoices.map((item) => (
-          <ReflectionChoiceCard
-            key={item.mode}
-            mode={item.mode}
-            prompt={item.prompt}
-            purpose={item.purpose}
-            onPress={() => setFocusedChoice(item)}
-            style={styles.card}
-          />
-        ))}
+        <ReflectCardStack choices={reflectionChoices} onSelectChoice={setFocusedChoice} />
       </View>
     </View>
   );
@@ -59,6 +50,5 @@ export default function Reflect({ onUnlocked }: ReflectProps) {
 const styles = StyleSheet.create({
   header: { alignSelf: "stretch", marginBottom: layout.screenHeaderAfterMargin },
   title: { ...textStyles.screenTitle },
-  cards: { flex: 1, width: "100%", gap: layout.screenColumnGap },
-  card: { flex: 1 },
+  cards: { flex: 1, width: "100%" },
 });

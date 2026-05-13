@@ -67,7 +67,7 @@
 |---|---|---|
 | Today (experience + recap) | `components/today/` | Hosts locked flow and post-unlock recap surface. |
 | Receive | `components/today/receive/` | `config`, `flow`, `landing`, `quotes/*`, `parts/*` — see **`RECEIVE_STATE.md`** for architecture, tradeoffs, and review checklist. |
-| Reflect | `components/today/reflect/` | Choice config, list/focus views, and response submit wiring. |
+| Reflect | `components/today/reflect/` | `config`, `Reflect.tsx`, `parts/*` — see **`REFLECT_STATE.md`** for architecture and review checklist. |
 | Community | `components/community/` | Reads reflection responses and renders cards. |
 
 ### 5) Shared modules and config surfaces
@@ -99,15 +99,15 @@
 
 - **Feature folders:** **`components/today/receive/`**, **`components/today/reflect/`**, **`components/today/`**, and **`components/community/`**.
 
-- **Centralized scene styling:** **`constants/screen.ts`** + **`layout.*`** + **`textStyles.screenSubtitle`** aligned across Community, Reflect, Profile, **`ReflectionFocusView`**.
+- **Centralized scene styling:** **`constants/screen.ts`** + **`layout.*`** + **`textStyles.screenSubtitle`** aligned across Community, Reflect, Profile, **`reflect/parts/FocusView`**.
 
 - **Receive landing:** Hero slide, quote fade, ponder band, **`ReceiveLandingPonderCtaSlot`** dock matched to tab bar height/safe area.
 
 - **Pre-unlock isolation:** separate `/(locked)` route group hosts **TodayExperience** only; after first submit, `router.replace('/(tabs)')` enters full tabs.
 
-- **Reflect:** Three lenses, **`ReflectionChoiceCard`**, **`ReflectionFocusView`** (Reanimated entrance, submit on keyboard Done) now under `components/today/reflect/`.
+- **Reflect:** Three lenses under `components/today/reflect/` — orchestration in **`Reflect.tsx`**, presentational **`parts/ChoiceCard`**, **`parts/FocusView`** (Reanimated entrance, submit on keyboard Done), shared **`parts/CardShell`**.
 
-- **Community:** Lists submitted reflections via **`CommunityReflectionCard`** (**`ReflectionCardShell`** from `components/today/reflect/`).
+- **Community:** Lists submitted reflections via **`CommunityReflectionCard`**, reusing **`CardShell`** from **`components/today/reflect/parts/CardShell.tsx`** (direct import avoids loading **`Reflect`** when only the shell is needed).
 
 
 

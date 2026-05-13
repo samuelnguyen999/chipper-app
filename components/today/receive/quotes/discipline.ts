@@ -1,7 +1,7 @@
 /** Habits, environment, standards, and sustained effort. Tuesday */
 export const disciplineQuotes = [
   "How you do the small things is how you do everything",
-  "The more disciplined your environment is, the less disciplined you need to be",
+  "The more disciplined your environment is, the less self-discipline you need to rely on.",
   "You don’t need motivation—you need to stop lying to yourself",
   "Discipline hurts less than regret—pick your pain",
   "The grind is bitter; it cannot be diluted",
