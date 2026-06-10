@@ -24,4 +24,18 @@ export const receiveTiming = {
   quoteToPonderDelayMs: 0,
   /** How long the ponder progress runs (0 → 100%) */
   ponderDurationMs: 25000,
+  /** Ms after ponder phase starts before the hint appears */
+  ponderHintRevealMs: 10000,
+  /** Ms after ponder phase starts when the hint hides */
+  ponderHintHideMs: 15000,
+  /** Opacity fade when the hint appears / disappears */
+  ponderHintFadeMs: 800,
 } as const;
+
+/** Whether the ponder hint caption is visible at `elapsedMs` since ponder started. */
+export function isPonderHintVisible(elapsedMs: number): boolean {
+  return (
+    elapsedMs >= receiveTiming.ponderHintRevealMs &&
+    elapsedMs < receiveTiming.ponderHintHideMs
+  );
+}

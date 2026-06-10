@@ -1,17 +1,23 @@
 /**
- * Reflect lens stack — hybrid horizontal swipe + quiet arrows.
+ * Reflect lens stack — horizontal swipe + quiet arrows, calm stack peek.
  *
- * Design intent (parameters below): calm “turn a card on a desk,” not carousel /
- * Tinder energy — stack peek, restrained motion, low visual density.
+ * @see ../REFLECT_TUNING.md — tuning table, depth model, file section map (humans + agents).
+ *
+ * **At rest:** cyclic deck depth so all three lenses show peek edges on every active index.
+ * **While dragging:** linear `stackPeekDepth` for z-order only (correct neighbor on 3→2, 2→1).
+ * **On commit:** outgoing eases horizontally to center, then tucks to cyclic depth behind the new front.
+ * **Stability:** `layers` is a memoized tuple so depth `useEffect` does not re-fire on unrelated re-renders.
  */
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Pressable, StyleSheet, useWindowDimensions, View } from "react-native";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import Animated, {
+  cancelAnimation,
   Easing,
   runOnJS,
   useAnimatedStyle,
   useSharedValue,
+  withDelay,
   withTiming,
   type SharedValue,
 } from "react-native-reanimated";
@@ -20,12 +26,47 @@ import { colors, spacing } from "../../../../constants";
 import type { ReflectionChoice } from "../config";
 import ChoiceCard from "./ChoiceCard";
 
-/** Playing card proportion 2.5" × 3.5" → height = width × (3.5/2.5). */
+// -----------------------------------------------------------------------------
+// Tuning — change numbers here first; document in REFLECT_TUNING.md
+// -----------------------------------------------------------------------------
+
+/** Playing-card aspect + max size on screen */
 const PLAYING_CARD_WIDTH_UNITS = 2.5;
 const PLAYING_CARD_HEIGHT_UNITS = 3.5;
 const CARD_MAX_WIDTH = 322;
 const CARD_WIDTH_SCREEN_FRAC = 0.82;
 const CARD_MAX_HEIGHT_SCREEN_FRAC = 0.48;
+
+/** Rest stack: Y / scale / opacity per cyclic depth (0 = front, 1, 2) */
+const PEEK_TRANSLATE_Y: [number, number, number] = [0, 5, 11];
+const PEEK_SCALE: [number, number, number] = [1, 0.985, 0.97];
+const PEEK_OPACITY: [number, number, number] = [1, 0.93, 0.88];
+
+/** Shared motion when rest depth targets change (non-outgoing + outgoing after tuck delay) */
+const STACK_TRANSITION_MS = 2000;
+const STACK_EASING = Easing.out(Easing.cubic);
+
+/** Outgoing card: horizontal return, then delayed depth tuck */
+const OUTGOING_RETURN_MS = 1000;
+const OUTGOING_TUCK_DELAY_MS = 100;
+const OUTGOING_TUCK_MS = 760;
+/** Must cover return + tuck + margin before `outgoingIndexSV` clears (see REFLECT_TUNING.md) */
+const HANDOFF_CLEAR_MS = OUTGOING_RETURN_MS + OUTGOING_TUCK_DELAY_MS + OUTGOING_TUCK_MS + 80;
+/** Fake horizontal offset when using chevrons (no drag distance) */
+const ARROW_RELEASE_PX = 16;
+
+/** Pan activation / vertical fail; swipe commit + drag clamp */
+const PAN_ACTIVE_OFFSET_X = 14;
+const PAN_FAIL_OFFSET_Y = 12;
+const SWIPE_COMMIT_THRESHOLD_PX = 52;
+const SWIPE_DRAG_CLAMP_PX = 64;
+
+/** Cancelled swipe: `dragX` back to 0 */
+const DRAG_RESET_MS = 2000;
+
+// -----------------------------------------------------------------------------
+// Card frame (max width/height from window)
+// -----------------------------------------------------------------------------
 
 function useReflectCardFrame() {
   const { width: sw, height: sh } = useWindowDimensions();
@@ -42,50 +83,59 @@ function useReflectCardFrame() {
   }, [sw, sh]);
 }
 
-/* -------------------------------------------------------------------------- */
-/*  Motion & layout — tuned for quiet, weighted feel (see module comment).    */
-/*  • Stack peek: subtle scale + tiny Y + modest opacity — not 3D deck.      */
-/*  • Stack depth transition: slower settle after swipe (STACK_TRANSITION_MS). */
-/*  • Swipe: horizontal only; drag clamped; no fling throw / no rotateZ.     */
-/*  • Release drag axis: timing reset (no spring overshoot on translateX).   */
-/* -------------------------------------------------------------------------- */
+// -----------------------------------------------------------------------------
+// Depth helpers — cyclic rest vs linear strip peek while dragging
+// -----------------------------------------------------------------------------
 
-/** Stack depth (peek positions) after swipe / arrow — 2× prior 280ms for slower reveal */
-const STACK_TRANSITION_MS = 560;
+function stackDepthCyclic(i: number, active: number, n: number): number {
+  if (n <= 1) return 0;
+  return (i - active + n * 4) % n;
+}
 
-const STACK_EASING = Easing.out(Easing.cubic);
+function stackDepthCyclicUI(i: number, active: number, n: number): number {
+  "worklet";
+  if (n <= 1) return 0;
+  return (i - active + n * 4) % n;
+}
 
-/** Horizontal activation before pan wins — reduces accidental drags vs taps */
-const PAN_ACTIVE_OFFSET_X = 14;
+function stackPeekDepth(i: number, active: number, n: number): number {
+  if (n <= 1 || i === active) return 0;
+  if (n === 2) return 1;
+  if (active === 0) return i === 1 ? 1 : 2;
+  if (active === n - 1) return i === active - 1 ? 1 : 2;
+  return i === active - 1 ? 1 : 2;
+}
 
-/** Vertical tolerance before pan fails — keeps vertical scroll/taps on card */
-const PAN_FAIL_OFFSET_Y = 12;
+function stackPeekDepthUI(i: number, active: number, n: number): number {
+  "worklet";
+  if (n <= 1 || i === active) return 0;
+  if (n === 2) return 1;
+  if (active === 0) return i === 1 ? 1 : 2;
+  if (active === n - 1) return i === active - 1 ? 1 : 2;
+  return i === active - 1 ? 1 : 2;
+}
 
-/** Commit swipe after this horizontal distance (px) — gentle, not “throw” */
-const SWIPE_COMMIT_THRESHOLD_PX = 52;
+function stackZIndexUI(
+  index: number,
+  ai: number,
+  outgoing: number,
+  n: number,
+  dragX: number
+): number {
+  "worklet";
+  if (outgoing >= 0 && outgoing < n) {
+    if (index === ai) return 30;
+    if (index === outgoing) return 20;
+    return 10;
+  }
+  const dragging = Math.abs(dragX) > 1;
+  const d = dragging ? stackPeekDepthUI(index, ai, n) : stackDepthCyclicUI(index, ai, n);
+  return 10 + (2 - Math.min(d, 2)) * 10;
+}
 
-/** Max drag translation (px) — slight resistance / no long fling visuals */
-const SWIPE_DRAG_CLAMP_PX = 64;
-
-/** Parallax on the card directly beneath front (fraction of dragX) */
-const PEEK_PARALLAX_FRAC = 0.08;
-
-/** Depth 0 = front reader card; 1 / 2 = recede behind with minimal Y */
-const PEEK_TRANSLATE_Y: [number, number, number] = [0, 5, 11];
-
-/** Subtle scale steps — front stays grounded at 1 */
-const PEEK_SCALE: [number, number, number] = [1, 0.985, 0.97];
-
-/** Opacity steps — low contrast peek, not a second hero surface */
-const PEEK_OPACITY: [number, number, number] = [1, 0.91, 0.84];
-
-/** Drag release after swipe decision — slightly longer to match slower stack settle */
-const DRAG_RESET_MS = 480;
-
-const stackTiming = {
-  duration: STACK_TRANSITION_MS,
-  easing: STACK_EASING,
-};
+// -----------------------------------------------------------------------------
+// Layer motion — shared values per card + depth target application
+// -----------------------------------------------------------------------------
 
 type LayerMotion = {
   translateY: SharedValue<number>;
@@ -93,7 +143,6 @@ type LayerMotion = {
   opacity: SharedValue<number>;
 };
 
-/** Initial shared values assume `activeIndex === 0` (first lens on top). */
 function useThreeLayerMotions(): [LayerMotion, LayerMotion, LayerMotion] {
   const translateY0 = useSharedValue(PEEK_TRANSLATE_Y[0]);
   const scale0 = useSharedValue(PEEK_SCALE[0]);
@@ -104,25 +153,49 @@ function useThreeLayerMotions(): [LayerMotion, LayerMotion, LayerMotion] {
   const translateY2 = useSharedValue(PEEK_TRANSLATE_Y[2]);
   const scale2 = useSharedValue(PEEK_SCALE[2]);
   const opacity2 = useSharedValue(PEEK_OPACITY[2]);
-  return [
-    { translateY: translateY0, scale: scale0, opacity: opacity0 },
-    { translateY: translateY1, scale: scale1, opacity: opacity1 },
-    { translateY: translateY2, scale: scale2, opacity: opacity2 },
-  ];
+  return useMemo(
+    () => [
+      { translateY: translateY0, scale: scale0, opacity: opacity0 },
+      { translateY: translateY1, scale: scale1, opacity: opacity1 },
+      { translateY: translateY2, scale: scale2, opacity: opacity2 },
+    ],
+    [translateY0, scale0, opacity0, translateY1, scale1, opacity1, translateY2, scale2, opacity2]
+  );
 }
 
 function applyDepthTargets(
   activeIndex: number,
   layers: LayerMotion[],
-  choiceCount: number
+  choiceCount: number,
+  outgoingIdx: number
 ) {
   const n = choiceCount;
+  const timing = { duration: STACK_TRANSITION_MS, easing: STACK_EASING };
+  const tuckTiming = { duration: OUTGOING_TUCK_MS, easing: STACK_EASING };
+  const handoff = outgoingIdx >= 0 && outgoingIdx < n;
+
   for (let i = 0; i < n; i++) {
-    const depth = (i - activeIndex + n * 4) % n;
-    const d = Math.min(depth, 2) as 0 | 1 | 2;
-    layers[i].translateY.value = withTiming(PEEK_TRANSLATE_Y[d], stackTiming);
-    layers[i].scale.value = withTiming(PEEK_SCALE[d], stackTiming);
-    layers[i].opacity.value = withTiming(PEEK_OPACITY[d], stackTiming);
+    cancelAnimation(layers[i]!.translateY);
+    cancelAnimation(layers[i]!.scale);
+    cancelAnimation(layers[i]!.opacity);
+
+    const d = Math.min(stackDepthCyclic(i, activeIndex, n), 2) as 0 | 1 | 2;
+    const ty = PEEK_TRANSLATE_Y[d];
+    const sc = PEEK_SCALE[d];
+    const op = PEEK_OPACITY[d];
+
+    if (handoff && i === outgoingIdx) {
+      layers[i]!.translateY.value = withDelay(
+        OUTGOING_TUCK_DELAY_MS,
+        withTiming(ty, tuckTiming)
+      );
+      layers[i]!.scale.value = withDelay(OUTGOING_TUCK_DELAY_MS, withTiming(sc, tuckTiming));
+      layers[i]!.opacity.value = withDelay(OUTGOING_TUCK_DELAY_MS, withTiming(op, tuckTiming));
+    } else {
+      layers[i]!.translateY.value = withTiming(ty, timing);
+      layers[i]!.scale.value = withTiming(sc, timing);
+      layers[i]!.opacity.value = withTiming(op, timing);
+    }
   }
 }
 
@@ -130,6 +203,10 @@ type ReflectCardStackProps = {
   choices: readonly ReflectionChoice[];
   onSelectChoice: (choice: ReflectionChoice) => void;
 };
+
+// -----------------------------------------------------------------------------
+// ReflectCardStack — state, gestures, arrows
+// -----------------------------------------------------------------------------
 
 export default function ReflectCardStack({ choices, onSelectChoice }: ReflectCardStackProps) {
   const n = choices.length;
@@ -145,22 +222,47 @@ export default function ReflectCardStack({ choices, onSelectChoice }: ReflectCar
 
   const activeIdxSV = useSharedValue(0);
   const dragX = useSharedValue(0);
-
+  const outgoingIndexSV = useSharedValue(-1);
+  const outgoingHandoffX = useSharedValue(0);
   const layers = useThreeLayerMotions();
 
   useEffect(() => {
     activeIdxSV.value = activeIndex;
-  }, [activeIndex, activeIdxSV]);
+    const oi = outgoingIndexSV.value;
+    applyDepthTargets(activeIndex, layers, n, oi);
+    const id = setTimeout(() => {
+      outgoingIndexSV.value = -1;
+      outgoingHandoffX.value = 0;
+      cancelAnimation(outgoingHandoffX);
+    }, HANDOFF_CLEAR_MS);
+    return () => clearTimeout(id);
+  }, [activeIndex, n, layers, activeIdxSV, outgoingHandoffX, outgoingIndexSV]);
 
-  useEffect(() => {
-    applyDepthTargets(activeIndex, layers, n);
-  }, [activeIndex, layers, n]);
-
-  const bumpIndex = useCallback(
+  const bumpActiveOnly = useCallback(
     (delta: number) => {
       setActiveIndex((prev) => Math.max(0, Math.min(n - 1, prev + delta)));
     },
     [n]
+  );
+
+  const bumpIndex = useCallback(
+    (delta: number) => {
+      cancelAnimation(dragX);
+      cancelAnimation(outgoingHandoffX);
+      dragX.value = 0;
+      setActiveIndex((prev) => {
+        const next = Math.max(0, Math.min(n - 1, prev + delta));
+        if (next !== prev) {
+          outgoingIndexSV.value = prev;
+          activeIdxSV.value = next;
+          const startX = delta > 0 ? -ARROW_RELEASE_PX : ARROW_RELEASE_PX;
+          outgoingHandoffX.value = startX;
+          outgoingHandoffX.value = withTiming(0, { duration: OUTGOING_RETURN_MS, easing: STACK_EASING });
+        }
+        return next;
+      });
+    },
+    [activeIdxSV, dragX, n, outgoingHandoffX, outgoingIndexSV]
   );
 
   const panGesture = useMemo(
@@ -168,6 +270,11 @@ export default function ReflectCardStack({ choices, onSelectChoice }: ReflectCar
       Gesture.Pan()
         .activeOffsetX([-PAN_ACTIVE_OFFSET_X, PAN_ACTIVE_OFFSET_X])
         .failOffsetY([-PAN_FAIL_OFFSET_Y, PAN_FAIL_OFFSET_Y])
+        .onBegin(() => {
+          "worklet";
+          cancelAnimation(dragX);
+          cancelAnimation(outgoingHandoffX);
+        })
         .onUpdate((e) => {
           "worklet";
           const x = e.translationX;
@@ -175,17 +282,32 @@ export default function ReflectCardStack({ choices, onSelectChoice }: ReflectCar
         })
         .onEnd(() => {
           "worklet";
-          const x = dragX.value;
+          const releaseX = dragX.value;
           const ai = activeIdxSV.value;
           const atEnd = n - 1;
-          if (x < -SWIPE_COMMIT_THRESHOLD_PX && ai < atEnd) {
-            runOnJS(bumpIndex)(1);
-          } else if (x > SWIPE_COMMIT_THRESHOLD_PX && ai > 0) {
-            runOnJS(bumpIndex)(-1);
+          let committed = false;
+          if (releaseX < -SWIPE_COMMIT_THRESHOLD_PX && ai < atEnd) {
+            dragX.value = 0;
+            outgoingIndexSV.value = ai;
+            activeIdxSV.value = ai + 1;
+            outgoingHandoffX.value = releaseX;
+            outgoingHandoffX.value = withTiming(0, { duration: OUTGOING_RETURN_MS, easing: STACK_EASING });
+            runOnJS(bumpActiveOnly)(1);
+            committed = true;
+          } else if (releaseX > SWIPE_COMMIT_THRESHOLD_PX && ai > 0) {
+            dragX.value = 0;
+            outgoingIndexSV.value = ai;
+            activeIdxSV.value = ai - 1;
+            outgoingHandoffX.value = releaseX;
+            outgoingHandoffX.value = withTiming(0, { duration: OUTGOING_RETURN_MS, easing: STACK_EASING });
+            runOnJS(bumpActiveOnly)(-1);
+            committed = true;
           }
-          dragX.value = withTiming(0, { duration: DRAG_RESET_MS, easing: STACK_EASING });
+          if (!committed) {
+            dragX.value = withTiming(0, { duration: DRAG_RESET_MS, easing: STACK_EASING });
+          }
         }),
-    [activeIdxSV, bumpIndex, dragX, n]
+    [activeIdxSV, bumpActiveOnly, dragX, n, outgoingHandoffX, outgoingIndexSV]
   );
 
   return (
@@ -201,7 +323,9 @@ export default function ReflectCardStack({ choices, onSelectChoice }: ReflectCar
               choiceCount={n}
               layer={layers[i]!}
               dragX={dragX}
-              parallaxFrac={PEEK_PARALLAX_FRAC}
+              activeIdxSV={activeIdxSV}
+              outgoingIndexSV={outgoingIndexSV}
+              outgoingHandoffX={outgoingHandoffX}
               cardWidth={cardWidth}
               cardHeight={cardHeight}
               purposeExpanded={purposeExpanded}
@@ -248,6 +372,10 @@ export default function ReflectCardStack({ choices, onSelectChoice }: ReflectCar
   );
 }
 
+// -----------------------------------------------------------------------------
+// StackedChoiceCard — per-card animated wrapper + ChoiceCard
+// -----------------------------------------------------------------------------
+
 type StackedChoiceCardProps = {
   choice: ReflectionChoice;
   index: number;
@@ -255,7 +383,9 @@ type StackedChoiceCardProps = {
   choiceCount: number;
   layer: LayerMotion;
   dragX: SharedValue<number>;
-  parallaxFrac: number;
+  activeIdxSV: SharedValue<number>;
+  outgoingIndexSV: SharedValue<number>;
+  outgoingHandoffX: SharedValue<number>;
   cardWidth: number;
   cardHeight: number;
   purposeExpanded: boolean;
@@ -270,32 +400,50 @@ function StackedChoiceCard({
   choiceCount,
   layer,
   dragX,
-  parallaxFrac,
+  activeIdxSV,
+  outgoingIndexSV,
+  outgoingHandoffX,
   cardWidth,
   cardHeight,
   purposeExpanded,
   onTogglePurpose,
   onSelectChoice,
 }: StackedChoiceCardProps) {
-  const depth = (index - activeIndex + choiceCount * 4) % choiceCount;
+  const depth = stackDepthCyclic(index, activeIndex, choiceCount);
 
   const animatedStyle = useAnimatedStyle(() => {
+    const ai = activeIdxSV.value;
+    const oi = outgoingIndexSV.value;
     const dx = dragX.value;
-    let tx = 0;
-    if (depth === 0) tx = dx;
-    else if (depth === 1) tx = dx * parallaxFrac;
-    return {
-      transform: [{ translateX: tx }, { translateY: layer.translateY.value }, { scale: layer.scale.value }],
-      opacity: layer.opacity.value,
-    };
-  }, [depth, parallaxFrac, layer.opacity, layer.scale, layer.translateY, dragX]);
+    const isOutgoing = oi === index;
+    const tx = isOutgoing ? outgoingHandoffX.value : index === ai ? dx : 0;
+    const z = stackZIndexUI(index, ai, oi, choiceCount, dx);
 
-  const zIndex = 30 - Math.min(depth, 2) * 8;
+    return {
+      transform: [
+        { translateX: tx },
+        { translateY: layer.translateY.value },
+        { scale: layer.scale.value },
+      ],
+      opacity: layer.opacity.value,
+      zIndex: z,
+    };
+  }, [
+    index,
+    choiceCount,
+    activeIdxSV,
+    outgoingIndexSV,
+    outgoingHandoffX,
+    layer.translateY,
+    layer.scale,
+    layer.opacity,
+    dragX,
+  ]);
 
   return (
     <Animated.View
       pointerEvents={depth === 0 ? "auto" : "none"}
-      style={[StyleSheet.absoluteFillObject, animatedStyle, { zIndex, justifyContent: "center", alignItems: "center" }]}
+      style={[StyleSheet.absoluteFillObject, animatedStyle, { justifyContent: "center", alignItems: "center" }]}
     >
       <ChoiceCard
         mode={choice.mode}
@@ -310,6 +458,10 @@ function StackedChoiceCard({
   );
 }
 
+// -----------------------------------------------------------------------------
+// Styles
+// -----------------------------------------------------------------------------
+
 const styles = StyleSheet.create({
   root: {
     flex: 1,
@@ -320,7 +472,6 @@ const styles = StyleSheet.create({
     width: "100%",
     position: "relative",
   },
-  /** Icons low in the column — avoids “hero carousel” center weight */
   arrowsRow: {
     flexDirection: "row",
     justifyContent: "space-between",

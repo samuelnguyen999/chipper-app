@@ -4,6 +4,8 @@
 
 **Audience:** Future agents and humans doing review or adaptation—read **`../receive/RECEIVE_STATE.md`** first for locked Today context, then this file before changing lenses, copy, submit/unlock wiring, or shared card chrome.
 
+**Stack motion (focus lens switcher):** **`REFLECT_TUNING.md`** — constants, depth model, and a section map for **`parts/ReflectCardStack.tsx`**.
+
 ---
 
 ## Folder layout (importance order)
@@ -74,6 +76,7 @@ Update **`reflectionPromptByMode`** in **`config.ts`** while keeping stable **`m
 | `parts/CardShell.tsx` | Shared bordered surface (Reflect choices + Community cards). |
 | `parts/ChoiceCard.tsx` | Lens row: purpose toggle, animated purpose reveal, tappable prompt. |
 | `parts/FocusView.tsx` | Reanimated entrance per mode, back, input, Done → submit callback. |
+| `parts/ReflectCardStack.tsx` | Focus mode: 1–3 lens swipe stack (cyclic rest depth, linear drag z-order, outgoing handoff). Tune via **`REFLECT_TUNING.md`**. |
 
 ---
 
@@ -116,6 +119,7 @@ Update **`reflectionPromptByMode`** in **`config.ts`** while keeping stable **`m
 | Card chrome (border, padding) | `parts/CardShell.tsx` |
 | Purpose toggle / prompt press target | `parts/ChoiceCard.tsx` |
 | Entrance motion, input submit UX | `parts/FocusView.tsx` |
+| Stack peek, swipe thresholds, handoff timing | `parts/ReflectCardStack.tsx` + **`REFLECT_TUNING.md`** |
 
 ---
 

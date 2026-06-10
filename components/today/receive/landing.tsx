@@ -8,7 +8,7 @@ import Animated, {
   withTiming,
 } from "react-native-reanimated";
 import { layout, spacing } from "../../../constants";
-import { receiveCopy, receiveTiming } from "./config";
+import { isPonderHintVisible, receiveCopy, receiveTiming } from "./config";
 import { useLandingFlow } from "./flow";
 import ReceiveLandingPonderCtaSlot from "./parts/PonderCtaSlot";
 import ReceiveLandingPonderHint from "./parts/PonderHint";
@@ -23,6 +23,7 @@ export default function Landing({ onContinueToReflect }: LandingProps) {
   const [headingHeight, setHeadingHeight] = useState(0);
   const translateY = useSharedValue(0);
   const quoteOpacity = useSharedValue(0);
+  const ponderHintOpacity = useSharedValue(0);
   const layoutReady = containerHeight > 0 && headingHeight > 0;
   const slideStartedRef = useRef(false);
   const fadeStartedRef = useRef(false);
@@ -64,11 +65,25 @@ export default function Landing({ onContinueToReflect }: LandingProps) {
     });
   }, [phase]);
 
-  const headingAnimatedStyle = useAnimatedStyle(() => ({ transform: [{ translateY: translateY.value }] }));
-  const quoteAnimatedStyle = useAnimatedStyle(() => ({ opacity: quoteOpacity.value }));
   const showQuote = phase === "quote_visible" || phase === "pondering" || phase === "continue_ready";
   const showPonderBand = phase === "pondering" || phase === "continue_ready";
   const ponderProgressValue = phase === "continue_ready" ? 100 : phase === "pondering" ? ponderProgress : 0;
+  const ponderElapsedMs = (ponderProgressValue / 100) * receiveTiming.ponderDurationMs;
+  const showPonderHint = showPonderBand && isPonderHintVisible(ponderElapsedMs);
+
+  useEffect(() => {
+    if (!showPonderBand) {
+      ponderHintOpacity.value = 0;
+      return;
+    }
+    ponderHintOpacity.value = withTiming(showPonderHint ? 1 : 0, {
+      duration: receiveTiming.ponderHintFadeMs,
+      easing: Easing.inOut(Easing.quad),
+    });
+  }, [showPonderBand, showPonderHint, ponderHintOpacity]);
+
+  const headingAnimatedStyle = useAnimatedStyle(() => ({ transform: [{ translateY: translateY.value }] }));
+  const quoteAnimatedStyle = useAnimatedStyle(() => ({ opacity: quoteOpacity.value }));
   const headerBandReserve = headingHeight > 0 ? spacing.md + headingHeight : spacing.md + 32;
 
   return (
@@ -84,7 +99,13 @@ export default function Landing({ onContinueToReflect }: LandingProps) {
             >
               <ReceiveLandingQuote text={receiveCopy.quote} />
             </Animated.View>
-            {showPonderBand ? <ReceiveLandingPonderHint text={receiveCopy.ponderHint} /> : null}
+            {showPonderBand ? (
+              <ReceiveLandingPonderHint
+                text={receiveCopy.ponderHint}
+                opacity={ponderHintOpacity}
+                visible={showPonderHint}
+              />
+            ) : null}
           </View>
         </View>
       </View>

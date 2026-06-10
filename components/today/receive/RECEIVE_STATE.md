@@ -30,6 +30,7 @@
 | `heading_sliding` → `quote_visible` | `completeHeadingSlide()` from `landing.tsx` when Reanimated `withTiming` completes |
 | `quote_visible` → `pondering` | `setTimeout` → `receiveTiming.quoteToPonderDelayMs` |
 | `pondering` → `continue_ready` | RAF loop until 100% over `receiveTiming.ponderDurationMs` |
+| Ponder hint visibility | `ponderHintRevealMs` → `ponderHintHideMs`; slot reserved during ponder (`opacity` 0); fades via `ponderHintFadeMs` |
 
 ---
 

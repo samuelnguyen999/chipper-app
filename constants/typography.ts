@@ -1,6 +1,10 @@
 import type { TextStyle } from "react-native";
+import { font } from "./fonts";
 import { colors } from "./colors";
 import { spacing } from "./spacing";
+
+export { FONT_PRESET, FONT_REGISTRY, fontFamily, fontLoadMap, usesAppFont } from "./fonts";
+export type { FontFamilyToken, FontPreset } from "./fonts";
 
 export const fontSize = {
   sm: 14,
@@ -20,28 +24,32 @@ export const lineHeight = {
 } as const;
 
 /**
- * Reusable text styles. Add `color` in the component when overriding.
+ * Reusable text styles. Font face comes from `constants/fonts.ts` (`FONT_PRESET`).
+ * Add `color` in the component when overriding.
  */
 export const textStyles = {
   screenSubtitle: {
+    ...font("regular"),
     fontSize: fontSize.md,
     lineHeight: lineHeight.body,
     color: colors.textMuted,
   } satisfies TextStyle,
 
   screenTitle: {
+    ...font("semibold"),
     fontSize: fontSize.title,
-    fontWeight: fontWeight.semibold,
     color: colors.text,
     marginBottom: spacing.md,
   } satisfies TextStyle,
 
   body: {
+    ...font("regular"),
     fontSize: fontSize.body,
     color: colors.text,
   } satisfies TextStyle,
 
   bodyCenter: {
+    ...font("regular"),
     fontSize: fontSize.body,
     lineHeight: lineHeight.body,
     textAlign: "center",
@@ -49,23 +57,25 @@ export const textStyles = {
   } satisfies TextStyle,
 
   caption: {
+    ...font("regular"),
     fontSize: fontSize.sm,
     color: colors.textMuted,
     marginBottom: spacing.sm,
   } satisfies TextStyle,
 
   emphasis: {
+    ...font("semibold"),
     fontSize: fontSize.lg,
-    fontWeight: fontWeight.semibold,
     color: colors.text,
   } satisfies TextStyle,
 
   buttonLabel: {
+    ...font("semibold"),
     fontSize: fontSize.md,
-    fontWeight: fontWeight.semibold,
   } satisfies TextStyle,
 
   link: {
+    ...font("regular"),
     fontSize: fontSize.lg,
     textDecorationLine: "underline",
   } satisfies TextStyle,

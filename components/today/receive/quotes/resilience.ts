@@ -27,4 +27,5 @@ export const resilienceQuotes = [
   "Come back again and again at that wall—and you’ll have a breakthrough",
   "Where your fear is, there is your task",
   "Pain brings out passion and aliveness",
+  "You've made it through 100% of your difficult days.",
 ] as const;

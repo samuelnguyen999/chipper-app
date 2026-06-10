@@ -28,6 +28,11 @@
     "plugins": [
       "expo-router",
       "expo-font"
-    ]
+    ],
+    "extra": {
+      "appEnv": "development",
+      "forceMainTabs": false,
+      "forceOnboarding": false
+    }
   }
 }

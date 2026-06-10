@@ -1,18 +1,24 @@
 import {
   createContext,
-  useEffect,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
   useState,
   type ReactNode,
 } from "react";
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import {
+  getLocalCalendarDate,
+  loadOnboardingGateStorage,
+  persistOnboardingCompleteToday,
+  resolveDevGateFlags,
+  shouldShowMainTabs,
+  type OnboardingGateStorage,
+} from "./onboardingGate";
 
 /**
- * Single source of truth for “full app” tab chrome:
- * - `false` until the first successful reflection submit (`Reflect` → `unlockMainTabs`).
- * - Drives tab bar visibility and pager `swipeEnabled` / `animationEnabled` in `app/(tabs)/_layout.tsx`.
+ * Tab chrome gate: main tabs after daily onboarding (Reflect submit) is complete for **today**
+ * (local calendar date in AsyncStorage). See `onboardingGate.ts` for rules and dev override.
  */
 type TabAccessContextValue = {
   isHydrated: boolean;
@@ -21,41 +27,21 @@ type TabAccessContextValue = {
 };
 
 const TabAccessContext = createContext<TabAccessContextValue | null>(null);
-const MAIN_TABS_UNLOCKED_KEY = "mainTabsUnlocked";
-
-async function safeGetUnlockFlag() {
-  try {
-    return await AsyncStorage.getItem(MAIN_TABS_UNLOCKED_KEY);
-  } catch {
-    return null;
-  }
-}
-
-async function safeSetUnlockFlag() {
-  try {
-    await AsyncStorage.setItem(MAIN_TABS_UNLOCKED_KEY, "true");
-  } catch {
-    // Storage may be unavailable in some runtimes; keep unlock in memory.
-  }
-}
 
 export function TabAccessProvider({ children }: { children: ReactNode }) {
   const [isHydrated, setIsHydrated] = useState(false);
-  const [mainTabsUnlocked, setMainTabsUnlocked] = useState(false);
+  const [storage, setStorage] = useState<OnboardingGateStorage>({ lastOnboardingDate: null });
+  const [sessionUnlocked, setSessionUnlocked] = useState(false);
+  const devFlags = resolveDevGateFlags();
 
   useEffect(() => {
     let isMounted = true;
 
     const hydrate = async () => {
-      try {
-        const stored = await safeGetUnlockFlag();
-        if (isMounted && stored === "true") {
-          setMainTabsUnlocked(true);
-        }
-      } finally {
-        if (isMounted) {
-          setIsHydrated(true);
-        }
+      const loaded = await loadOnboardingGateStorage();
+      if (isMounted) {
+        setStorage(loaded);
+        setIsHydrated(true);
       }
     };
 
@@ -66,9 +52,22 @@ export function TabAccessProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
+  const mainTabsUnlocked = useMemo(() => {
+    if (sessionUnlocked) return isHydrated;
+    const gateStorage =
+      devFlags.forceOnboarding ? { lastOnboardingDate: null } : storage;
+    return shouldShowMainTabs({
+      hydrated: isHydrated,
+      storage: gateStorage,
+      devOverride: devFlags.forceMainTabs && !devFlags.forceOnboarding,
+    });
+  }, [devFlags.forceMainTabs, devFlags.forceOnboarding, isHydrated, sessionUnlocked, storage]);
+
   const unlockMainTabs = useCallback(() => {
-    setMainTabsUnlocked(true);
-    void safeSetUnlockFlag();
+    const today = getLocalCalendarDate();
+    setSessionUnlocked(true);
+    setStorage({ lastOnboardingDate: today });
+    void persistOnboardingCompleteToday();
   }, []);
 
   const value = useMemo(
