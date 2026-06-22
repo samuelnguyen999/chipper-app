@@ -9,7 +9,7 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import Animated, { FadeInDown, FadeOutUp } from "react-native-reanimated";
-import { colors, spacing, fontSize, fontWeight, lineHeight } from "../../../../constants";
+import { colors, spacing, font, scaleLineHeight, textSize } from "../../../../constants";
 import CardShell from "./CardShell";
 
 export type ChoiceCardProps = {
@@ -51,7 +51,7 @@ export default function ChoiceCard({
             android_ripple={{ color: colors.borderSubtle }}
             style={({ pressed }) => [styles.promptPressable, pressed && styles.pressed]}
           >
-            <Text style={styles.prompt}>“{prompt}”</Text>
+            <Text style={[font("semibold"), styles.prompt, textSize("title"), { lineHeight: scaleLineHeight("body") }]}>“{prompt}”</Text>
           </Pressable>
         </View>
 
@@ -64,14 +64,14 @@ export default function ChoiceCard({
             style={({ pressed }) => [styles.infoRow, pressed && styles.pressed]}
           >
             <View style={styles.leadRow}>
-              <Text style={styles.mode}>{mode}</Text>
+              <Text style={[font("semibold"), styles.mode, textSize("body")]}>{mode}</Text>
               <Ionicons
                 name="information-circle-outline"
                 size={18}
                 color={colors.textMuted}
                 style={styles.infoIcon}
               />
-              <Text style={styles.infoHint}>
+              <Text style={[font("regular"), styles.infoHint, textSize("sm")]}>
                 {purposeExpanded ? "Hide purpose" : "Tap for purpose"}
               </Text>
             </View>
@@ -90,7 +90,7 @@ export default function ChoiceCard({
                   showsVerticalScrollIndicator={false}
                   style={styles.purposeScroll}
                 >
-                  <Text style={styles.purpose}>{purpose}</Text>
+                  <Text style={[font("regular"), styles.purpose, textSize("sm"), { lineHeight: 22 }]}>{purpose}</Text>
                 </ScrollView>
               </Animated.View>
             ) : null}
@@ -133,9 +133,9 @@ const styles = StyleSheet.create({
   pressed: { opacity: 0.96 },
   leadRow: { flexDirection: "row", alignItems: "center" },
   infoRow: { alignSelf: "flex-start", marginBottom: spacing.xs },
-  mode: { fontSize: fontSize.body, fontWeight: fontWeight.semibold, color: colors.accent },
+  mode: { color: colors.accent },
   infoIcon: { marginLeft: spacing.xs, marginRight: spacing.xs },
-  infoHint: { fontSize: fontSize.sm, color: colors.textMuted },
+  infoHint: { color: colors.textMuted },
   purposeSlot: {
     height: PURPOSE_SLOT_HEIGHT,
     overflow: "hidden",
@@ -144,11 +144,8 @@ const styles = StyleSheet.create({
   purposeAnimated: { flex: 1 },
   purposeScroll: { flex: 1 },
   prompt: {
-    fontSize: fontSize.title,
-    fontWeight: fontWeight.semibold,
     color: colors.text,
-    lineHeight: lineHeight.body,
     textAlign: "center",
   },
-  purpose: { fontSize: fontSize.sm, lineHeight: 22, color: colors.textMuted },
+  purpose: { color: colors.textMuted },
 });

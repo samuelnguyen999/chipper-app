@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import Animated, { useAnimatedStyle, useSharedValue, withSpring } from "react-native-reanimated";
-import { colors, fontSize, fontWeight, layout, screen, spacing, textStyles } from "../../../../constants";
+import { colors, font, layout, scaleFontSize, scaleLineHeight, screen, spacing, textSize, textStyles } from "../../../../constants";
 
 export type FocusChoice = {
   mode: string;
@@ -112,19 +112,27 @@ export default function FocusView({
           hitSlop={12}
           style={({ pressed }) => [styles.backRow, pressed && styles.backPressed]}
         >
-          <Text style={styles.backChevron}>←</Text>
-          <Text style={styles.backLabel}>All lenses</Text>
+          <Text style={[textSize("lg"), styles.backChevron]}>←</Text>
+          <Text style={[textStyles.buttonLabel, styles.backLabel]}>All lenses</Text>
         </Pressable>
         <View style={styles.focusBlock}>
-          <Text style={styles.mode}>{mode}</Text>
-          <Text style={styles.prompt}>“{prompt}”</Text>
-          <Text style={styles.responseLabel}>Your response</Text>
+          <Text style={[font("semibold"), styles.mode, textSize("sm")]}>{mode}</Text>
+          <Text
+            style={[
+              font("semibold"),
+              styles.prompt,
+              { fontSize: scaleFontSize("title") + 2, lineHeight: scaleLineHeight("body") + 8 },
+            ]}
+          >
+            “{prompt}”
+          </Text>
+          <Text style={[textStyles.caption, styles.responseLabel]}>Your response</Text>
           <TextInput
             value={response}
             onChangeText={setResponse}
             placeholder="Respond here..."
             placeholderTextColor={colors.textMuted}
-            style={styles.responseInput}
+            style={[font("regular"), styles.responseInput, textSize("md")]}
             returnKeyType="done"
             onSubmitEditing={() => {
               const trimmed = response.trim();
@@ -146,19 +154,18 @@ const styles = StyleSheet.create({
   animatedWrap: { width: "100%", alignSelf: "stretch" },
   backRow: { flexDirection: "row", alignItems: "center", gap: spacing.sm, alignSelf: "flex-start", marginBottom: spacing.xl, paddingVertical: spacing.xs },
   backPressed: { opacity: 0.7 },
-  backChevron: { fontSize: fontSize.lg, color: colors.primary, fontWeight: fontWeight.semibold },
-  backLabel: { ...textStyles.buttonLabel, color: colors.primary, fontWeight: fontWeight.semibold },
+  backChevron: { color: colors.primary },
+  backLabel: { color: colors.primary },
   focusBlock: { width: "100%", alignItems: "stretch" },
-  mode: { fontSize: fontSize.sm, fontWeight: fontWeight.semibold, letterSpacing: 1, color: colors.accent, textTransform: "uppercase", marginBottom: spacing.md },
-  prompt: { fontSize: fontSize.title + 2, fontWeight: fontWeight.semibold, color: colors.text, lineHeight: 34, marginBottom: spacing.xxl },
-  responseLabel: { ...textStyles.caption, marginTop: spacing.xxl, marginBottom: spacing.sm, textTransform: "uppercase", letterSpacing: 0.5 },
+  mode: { letterSpacing: 1, color: colors.accent, textTransform: "uppercase", marginBottom: spacing.md },
+  prompt: { color: colors.text, marginBottom: spacing.xxl },
+  responseLabel: { marginTop: spacing.xxl, marginBottom: spacing.sm, textTransform: "uppercase", letterSpacing: 0.5 },
   responseInput: {
     borderWidth: 1,
     borderColor: colors.borderSubtle,
     borderRadius: spacing.sm,
     backgroundColor: colors.surfaceCard,
     color: colors.text,
-    fontSize: fontSize.md,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.md,
   },

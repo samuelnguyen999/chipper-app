@@ -57,8 +57,8 @@ export default function LogoGallery() {
         showsVerticalScrollIndicator={false}
         ListHeaderComponent={
           <View style={styles.header}>
-            <Text style={styles.title}>Your Profile</Text>
-            <Text style={styles.subtitle}>Logo gallery</Text>
+            <Text style={textStyles.screenTitle}>Your Profile</Text>
+            <Text style={[textStyles.body, styles.subtitle]}>Logo gallery</Text>
           </View>
         }
       />
@@ -73,9 +73,9 @@ export default function LogoGallery() {
           <View style={styles.viewerCard} pointerEvents="box-none">
             {selected ? (
               <>
-                <Text style={styles.viewerLabel}>{selected.label}</Text>
+                <Text style={[textStyles.caption, styles.viewerLabel]}>{selected.label}</Text>
                 <Image source={selected.source} style={styles.viewerImage} resizeMode="contain" />
-                <Text style={styles.viewerHint}>Tap anywhere to close</Text>
+                <Text style={[textStyles.caption, styles.viewerHint]}>Tap anywhere to close</Text>
               </>
             ) : null}
           </View>
@@ -91,11 +91,7 @@ const styles = StyleSheet.create({
   header: {
     marginBottom: layout.screenHeaderAfterMargin,
   },
-  title: {
-    ...textStyles.screenTitle,
-  },
   subtitle: {
-    ...textStyles.body,
     marginTop: spacing.xs,
     color: colors.textMuted,
   },
@@ -133,7 +129,6 @@ const styles = StyleSheet.create({
     gap: spacing.md,
   },
   viewerLabel: {
-    ...textStyles.caption,
     color: colors.onPrimaryMuted,
     textAlign: "center",
   },
@@ -143,7 +138,6 @@ const styles = StyleSheet.create({
     minHeight: 240,
   },
   viewerHint: {
-    ...textStyles.caption,
     color: colors.onPrimaryMuted,
     opacity: 0.85,
   },

@@ -57,7 +57,7 @@ export default function ReceiveLandingPonderCtaSlot({
         accessibilityValue={a11yProgress ? { min: 0, max: 100, now: Math.round(clamped) } : undefined}
       >
         <View style={styles.sizer} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
-          <Text style={styles.buttonLabel} numberOfLines={1}>{label}</Text>
+          <Text style={[textStyles.buttonLabel, styles.buttonLabelText]} numberOfLines={1}>{label}</Text>
         </View>
         <Animated.View style={[styles.layer, progressLayerStyle]} pointerEvents="none" importantForAccessibility="no-hide-descendants">
           <View style={styles.track}><View style={[styles.fill, { width: `${clamped}%` }]} /></View>
@@ -74,7 +74,7 @@ export default function ReceiveLandingPonderCtaSlot({
             onPress={onContinue}
             style={({ pressed }) => [styles.pressable, pressed && showButton && styles.pressablePressed]}
           >
-            <Text style={styles.buttonLabel} numberOfLines={1}>{label}</Text>
+            <Text style={[textStyles.buttonLabel, styles.buttonLabelText]} numberOfLines={1}>{label}</Text>
           </Pressable>
         </Animated.View>
       </View>
@@ -115,5 +115,5 @@ const styles = StyleSheet.create({
     paddingTop: layout.tabBarDockPaddingTop, paddingBottom: layout.tabBarDockItemPaddingBottom, paddingHorizontal: layout.screenPadding,
   },
   pressablePressed: { opacity: 0.92 },
-  buttonLabel: { ...textStyles.buttonLabel, color: colors.onPrimary },
+  buttonLabelText: { color: colors.onPrimary },
 });

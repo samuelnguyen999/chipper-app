@@ -7,8 +7,8 @@ export default function PostScreen() {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.label}>Post id</Text>
-      <Text style={styles.id}>{id}</Text>
+      <Text style={textStyles.caption}>Post id</Text>
+      <Text style={textStyles.emphasis}>{id}</Text>
     </View>
   );
 }
@@ -19,6 +19,4 @@ const styles = StyleSheet.create({
     padding: layout.screenPadding,
     justifyContent: "center",
   },
-  label: textStyles.caption,
-  id: textStyles.emphasis,
 });

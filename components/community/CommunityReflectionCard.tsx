@@ -1,10 +1,10 @@
 import { StyleSheet, Text, View } from "react-native";
 import {
   colors,
-  fontSize,
-  fontWeight,
-  lineHeight,
+  font,
+  scaleLineHeight,
   spacing,
+  textSize,
   textStyles,
 } from "../../constants";
 import CardShell from "../today/reflect/parts/CardShell";
@@ -23,12 +23,12 @@ export default function CommunityReflectionCard({
   return (
     <CardShell>
       <View style={styles.leadRow}>
-        <Text style={styles.mode}>{mode}</Text>
-        <Text style={styles.leadMuted}> → </Text>
-        <Text style={styles.prompt}>“{prompt}”</Text>
+        <Text style={[font("semibold"), styles.mode, textSize("body")]}>{mode}</Text>
+        <Text style={[font("regular"), styles.leadMuted, textSize("body"), { lineHeight: scaleLineHeight("body") }]}> → </Text>
+        <Text style={[font("semibold"), styles.prompt, textSize("body"), { lineHeight: scaleLineHeight("body") }]}>“{prompt}”</Text>
       </View>
-      <Text style={styles.responseLabel}>Response</Text>
-      <Text style={styles.response}>{response}</Text>
+      <Text style={[textStyles.caption, styles.responseLabel]}>Response</Text>
+      <Text style={textStyles.body}>{response}</Text>
     </CardShell>
   );
 }
@@ -41,28 +41,17 @@ const styles = StyleSheet.create({
     marginBottom: spacing.md,
   },
   mode: {
-    fontSize: fontSize.body,
-    fontWeight: fontWeight.semibold,
     color: colors.accent,
   },
   leadMuted: {
-    fontSize: fontSize.body,
-    lineHeight: lineHeight.body,
     color: colors.textMuted,
   },
   prompt: {
-    fontSize: fontSize.body,
-    fontWeight: fontWeight.semibold,
     color: colors.text,
-    lineHeight: lineHeight.body,
   },
   responseLabel: {
-    ...textStyles.caption,
     textTransform: "uppercase",
     letterSpacing: 0.5,
     marginBottom: spacing.xs,
-  },
-  response: {
-    ...textStyles.body,
   },
 });

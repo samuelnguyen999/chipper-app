@@ -10,7 +10,7 @@ export default function ReceiveLandingHeading({
 }: ReceiveLandingHeadingProps) {
   return (
     <View style={styles.wrap} accessibilityRole="header">
-      <Text style={styles.title}>{title}</Text>
+      <Text style={[textStyles.screenTitle, styles.title]}>{title}</Text>
     </View>
   );
 }
@@ -20,7 +20,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   title: {
-    ...textStyles.screenTitle,
     textAlign: "center",
   },
 });

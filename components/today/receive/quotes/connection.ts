@@ -15,7 +15,7 @@ export const connectionQuotes = [
   "What you tolerate teaches others how to treat you—and how to treat themselves",
   "Honor people even when you disagree",
   "Small acts of care compound into trust",
-  "Repair beats winning the argument",
+  "Connection beats winning the argument",
   "Gratitude toward people changes how you show up",
   "Show up consistently; reliability is love in motion",
 ] as const;

@@ -27,7 +27,7 @@ export default function ReceiveLandingPonderHint({
       accessibilityElementsHidden={!visible}
       importantForAccessibility={visible ? "yes" : "no-hide-descendants"}
     >
-      <Text style={styles.hint}>{text}</Text>
+      <Text style={[textStyles.caption, styles.hint]}>{text}</Text>
     </Animated.View>
   );
 }
@@ -37,7 +37,6 @@ const styles = StyleSheet.create({
     alignSelf: "stretch",
   },
   hint: {
-    ...textStyles.caption,
     marginBottom: 0,
     textAlign: "center",
     alignSelf: "stretch",

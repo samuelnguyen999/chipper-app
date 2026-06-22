@@ -5,8 +5,8 @@ import { colors, textStyles } from "../constants";
 export default function NotFoundScreen() {
   return (
       <View style={styles.container}>
-        <Text style={styles.text}>Page Not Found</Text>
-        <Link href="/" style={styles.link}>
+        <Text style={[textStyles.emphasis, styles.text]}>Page Not Found</Text>
+        <Link href="/" style={[textStyles.link, styles.link]}>
           Go to Home
         </Link>
       </View>
@@ -21,11 +21,9 @@ const styles = StyleSheet.create({
     backgroundColor: colors.notFoundBackground,
   },
   text: {
-    ...textStyles.emphasis,
     color: colors.notFoundText,
   },
   link: {
-    ...textStyles.link,
     color: colors.notFoundLink,
   },
 });

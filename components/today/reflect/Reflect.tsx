@@ -37,7 +37,7 @@ export default function Reflect({ onUnlocked }: ReflectProps) {
   return (
     <View style={[screen.fill, { paddingTop: layout.screenPadding, paddingHorizontal: layout.screenPadding, paddingBottom: bottomPad }]}>
       <View style={styles.header}>
-        <Text style={styles.title}>Reflect</Text>
+        <Text style={textStyles.screenTitle}>Reflect</Text>
         <Text style={textStyles.screenSubtitle}>Choose a lens — pick the reflection that fits today.</Text>
       </View>
       <View style={styles.cards}>
@@ -49,6 +49,5 @@ export default function Reflect({ onUnlocked }: ReflectProps) {
 
 const styles = StyleSheet.create({
   header: { alignSelf: "stretch", marginBottom: layout.screenHeaderAfterMargin },
-  title: { ...textStyles.screenTitle },
   cards: { flex: 1, width: "100%" },
 });

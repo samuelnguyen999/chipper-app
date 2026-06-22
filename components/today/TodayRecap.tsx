@@ -5,7 +5,7 @@ import { receiveCopy, ReceiveQuote } from "./receive";
 export default function TodayRecap() {
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Today</Text>
+      <Text style={textStyles.screenTitle}>Today</Text>
       <ReceiveQuote text={receiveCopy.quote} />
     </View>
   );
@@ -19,8 +19,5 @@ const styles = StyleSheet.create({
     paddingBottom: layout.screenScrollBottomPadding,
     justifyContent: "flex-start",
     gap: layout.screenColumnGap,
-  },
-  title: {
-    ...textStyles.screenTitle,
   },
 });

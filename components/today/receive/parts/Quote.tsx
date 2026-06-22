@@ -8,7 +8,7 @@ type ReceiveLandingQuoteProps = {
 export default function ReceiveLandingQuote({ text }: ReceiveLandingQuoteProps) {
   return (
     <View style={styles.wrap}>
-      <Text style={styles.quote}>“{text}”</Text>
+      <Text style={textStyles.bodyCenter}>“{text}”</Text>
     </View>
   );
 }
@@ -16,8 +16,5 @@ export default function ReceiveLandingQuote({ text }: ReceiveLandingQuoteProps) 
 const styles = StyleSheet.create({
   wrap: {
     alignItems: "center",
-  },
-  quote: {
-    ...textStyles.bodyCenter,
   },
 });

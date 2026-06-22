@@ -14,9 +14,9 @@ export default function CommunityScreen() {
       contentContainerStyle={styles.container}
       showsVerticalScrollIndicator={false}
     >
-      <Text style={styles.title}>Community</Text>
+      <Text style={textStyles.screenTitle}>Community</Text>
       {responses.length === 0 ? (
-        <Text style={styles.empty}>
+        <Text style={textStyles.body}>
           Your submitted reflections will appear here as cards.
         </Text>
       ) : (
@@ -38,12 +38,6 @@ export default function CommunityScreen() {
 const styles = StyleSheet.create({
   scroll: screen.scroll,
   container: screen.scrollContent,
-  title: {
-    ...textStyles.screenTitle,
-  },
-  empty: {
-    ...textStyles.body,
-  },
   cards: {
     gap: layout.screenColumnGap,
   },
