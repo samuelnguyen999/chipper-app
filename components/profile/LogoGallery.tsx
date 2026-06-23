@@ -9,7 +9,7 @@ import {
   useWindowDimensions,
   View,
 } from "react-native";
-import { colors, layout, radii, screen, spacing, textStyles } from "../../constants";
+import { colors, layout, radii, spacing, textStyles } from "../../constants";
 import { profileGalleryLayout } from "./config";
 import { profileLogos, type ProfileLogo } from "./logoAssets";
 
@@ -55,12 +55,6 @@ export default function LogoGallery() {
         contentContainerStyle={styles.content}
         columnWrapperStyle={styles.row}
         showsVerticalScrollIndicator={false}
-        ListHeaderComponent={
-          <View style={styles.header}>
-            <Text style={textStyles.screenTitle}>Your Profile</Text>
-            <Text style={[textStyles.body, styles.subtitle]}>Logo gallery</Text>
-          </View>
-        }
       />
 
       <Modal
@@ -86,14 +80,14 @@ export default function LogoGallery() {
 }
 
 const styles = StyleSheet.create({
-  list: screen.scroll,
-  content: screen.scrollContent,
-  header: {
-    marginBottom: layout.screenHeaderAfterMargin,
+  list: {
+    flex: 1,
+    width: "100%",
+    backgroundColor: colors.background,
   },
-  subtitle: {
-    marginTop: spacing.xs,
-    color: colors.textMuted,
+  content: {
+    paddingHorizontal: layout.screenPadding,
+    paddingBottom: layout.screenScrollBottomPadding,
   },
   row: {
     gap: layout.screenColumnGap,

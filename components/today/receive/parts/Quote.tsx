@@ -15,6 +15,8 @@ export default function ReceiveLandingQuote({ text }: ReceiveLandingQuoteProps) 
 
 const styles = StyleSheet.create({
   wrap: {
+    alignSelf: "stretch",
+    width: "100%",
     alignItems: "center",
   },
 });

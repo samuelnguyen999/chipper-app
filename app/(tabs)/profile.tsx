@@ -1,6 +1,6 @@
-import { StyleSheet, View } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 import LogoGallery, { FontPresetCycleButton } from "../../components/profile";
-import { layout, screen, spacing } from "../../constants";
+import { layout, screen, spacing, textStyles } from "../../constants";
 import { useRedirectWhenTabsLocked } from "../../state/useRedirectWhenTabsLocked";
 
 export default function ProfileScreen() {
@@ -8,7 +8,8 @@ export default function ProfileScreen() {
 
   return (
     <View style={styles.root}>
-      <View style={styles.toolbar}>
+      <View style={styles.header}>
+        <Text style={[textStyles.screenTitle, styles.title]}>Your Profile</Text>
         <FontPresetCycleButton />
       </View>
       <LogoGallery />
@@ -18,9 +19,15 @@ export default function ProfileScreen() {
 
 const styles = StyleSheet.create({
   root: screen.fill,
-  toolbar: {
-    paddingHorizontal: layout.screenPadding,
+  header: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    justifyContent: "space-between",
     paddingTop: layout.screenPadding,
-    paddingBottom: spacing.sm,
+    paddingHorizontal: layout.screenPadding,
+    gap: spacing.sm,
+  },
+  title: {
+    flex: 1,
   },
 });

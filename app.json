@@ -32,7 +32,7 @@
     "extra": {
       "appEnv": "development",
       "forceMainTabs": false,
-      "forceOnboarding": false
+      "forceOnboarding": true
     }
   }
 }

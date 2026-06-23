@@ -1,79 +1,85 @@
 import { Pressable, StyleSheet, Text, View } from "react-native";
-import { colors, layout, radii, spacing, textStyles } from "../../constants";
+import { colors, radii, spacing, textStyles } from "../../constants";
 import { useFontPreset } from "./FontPresetContext";
 
-/**
- * Dev typography controls — tap **Font** or **Text size** row to cycle presets.
- * Standalone card; swap rows for a dropdown later.
- */
+type PresetChipProps = {
+  kicker: string;
+  value: string;
+  accessibilityLabel: string;
+  onPress: () => void;
+};
+
+function PresetChip({ kicker, value, accessibilityLabel, onPress }: PresetChipProps) {
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={accessibilityLabel}
+      onPress={onPress}
+      style={({ pressed }) => [styles.chip, pressed && styles.chipPressed]}
+    >
+      <Text style={[textStyles.caption, styles.kicker]} numberOfLines={1}>
+        {kicker}
+      </Text>
+      <Text style={[textStyles.caption, styles.value]} numberOfLines={1}>
+        {value}
+      </Text>
+    </Pressable>
+  );
+}
+
+/** Compact Font + Size chips for the profile header (top right). */
 export default function FontPresetCycleButton() {
   const { fontLabel, sizeLabel, cycleFontPreset, cycleFontSize } = useFontPreset();
 
   return (
-    <View style={styles.wrap}>
-      <View style={styles.card}>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={`Font: ${fontLabel}. Tap to cycle fonts.`}
-          onPress={cycleFontPreset}
-          style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}
-        >
-          <Text style={[textStyles.caption, styles.kicker]}>Font</Text>
-          <Text style={[textStyles.buttonLabel, styles.value]} numberOfLines={1}>
-            {fontLabel}
-          </Text>
-        </Pressable>
-
-        <View style={styles.divider} />
-
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={`Text size: ${sizeLabel}. Tap to cycle sizes.`}
-          onPress={cycleFontSize}
-          style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}
-        >
-          <Text style={[textStyles.caption, styles.kicker]}>Text size</Text>
-          <Text style={[textStyles.buttonLabel, styles.value]} numberOfLines={1}>
-            {sizeLabel}
-          </Text>
-        </Pressable>
-      </View>
+    <View style={styles.row}>
+      <PresetChip
+        kicker="Font"
+        value={fontLabel}
+        accessibilityLabel={`Font: ${fontLabel}. Tap to cycle fonts.`}
+        onPress={cycleFontPreset}
+      />
+      <PresetChip
+        kicker="Size"
+        value={sizeLabel}
+        accessibilityLabel={`Text size: ${sizeLabel}. Tap to cycle sizes.`}
+        onPress={cycleFontSize}
+      />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  wrap: {
-    alignSelf: "stretch",
+  row: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.xs,
+    flexShrink: 0,
   },
-  card: {
-    alignSelf: "flex-start",
+  chip: {
     backgroundColor: colors.surfaceCard,
     borderRadius: radii.md,
     borderWidth: 1,
     borderColor: colors.borderSubtle,
-    maxWidth: "100%",
-    overflow: "hidden",
+    paddingVertical: spacing.xs,
+    paddingHorizontal: spacing.sm,
+    minWidth: 56,
+    maxWidth: 92,
+    alignItems: "flex-end",
   },
-  row: {
-    paddingVertical: spacing.sm,
-    paddingHorizontal: layout.screenPadding,
-    gap: spacing.xs,
-  },
-  rowPressed: {
+  chipPressed: {
     opacity: 0.88,
-  },
-  divider: {
-    height: 1,
-    backgroundColor: colors.borderSubtle,
-    alignSelf: "stretch",
   },
   kicker: {
     marginBottom: 0,
     textTransform: "uppercase",
-    letterSpacing: 0.6,
+    letterSpacing: 0.4,
+    fontSize: 11,
+    lineHeight: 14,
   },
   value: {
+    marginBottom: 0,
     color: colors.text,
+    textAlign: "right",
   },
 });
