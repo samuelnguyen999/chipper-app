@@ -4,7 +4,7 @@ import {
   scaleLineHeight,
   type FontSizeToken,
 } from "./fontSizes";
-import { font } from "./fonts";
+import { font, getTitleHorizontalInsetScale, getTitleLineHeightScale } from "./fonts";
 import { colors } from "./colors";
 import { spacing } from "./spacing";
 
@@ -19,6 +19,8 @@ export {
   getActiveFontPreset,
   getAllFontLoadMap,
   getFontFamilies,
+  getTitleLineHeightScale,
+  getTitleHorizontalInsetScale,
   nextFontPreset,
   setActiveFontPreset,
   usesAppFont,
@@ -79,12 +81,21 @@ const textStyleBuilders = {
     color: colors.textMuted,
   }),
 
-  screenTitle: (): TextStyle => ({
-    ...font("semibold"),
-    fontSize: scaleFontSize("title"),
-    color: colors.text,
-    marginBottom: spacing.md,
-  }),
+  screenTitle: (): TextStyle => {
+    const fontSize = scaleFontSize("title");
+    const insetScale = getTitleHorizontalInsetScale();
+    const paddingHorizontal =
+      insetScale > 0 ? Math.max(2, Math.round(fontSize * insetScale)) : undefined;
+
+    return {
+      ...font("semibold"),
+      fontSize,
+      lineHeight: Math.round(fontSize * getTitleLineHeightScale()),
+      ...(paddingHorizontal != null && { paddingHorizontal }),
+      color: colors.text,
+      marginBottom: spacing.md,
+    };
+  },
 
   body: (): TextStyle => ({
     ...font("regular"),

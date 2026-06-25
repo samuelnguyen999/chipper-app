@@ -11,16 +11,16 @@ export type ProfileLogo = {
 
 export const profileLogos: readonly ProfileLogo[] = [
   { id: "2-c", label: "2 - C", source: require("../../assets/Logos/2 - C.png") },
+  { id: "bevel-blue", label: "Bevel Blue", source: require("../../assets/Logos/Bevel Blue.png") },
   { id: "bevel-chocolate", label: "Bevel Chocolate", source: require("../../assets/Logos/Bevel Chocolate.png") },
-  { id: "bevel-logo-3", label: "Bevel Logo 3", source: require("../../assets/Logos/Bevel Logo 3.png") },
-  { id: "bevel-logo", label: "Bevel Logo", source: require("../../assets/Logos/Bevel Logo.png") },
+  { id: "bevel-light", label: "Bevel Light", source: require("../../assets/Logos/Bevel Light.png") },
   { id: "blackred", label: "blackRed", source: require("../../assets/Logos/blackRed.png") },
-  { id: "c-eblem", label: "C-eblem", source: require("../../assets/Logos/C-eblem.png") },
-  { id: "c-emblem", label: "C-emblem", source: require("../../assets/Logos/C-emblem.png") },
-  { id: "chippers-logo-water-2", label: "Chippers Logo water 2", source: require("../../assets/Logos/Chippers Logo water 2.png") },
+  { id: "c-emblem-logo", label: "C-emblem Logo", source: require("../../assets/Logos/C-emblem Logo.png") },
+  { id: "chocolate-emblem", label: "Chocolate Emblem", source: require("../../assets/Logos/Chocolate Emblem.png") },
   { id: "final-logo", label: "Final Logo", source: require("../../assets/Logos/Final Logo.png") },
-  { id: "flower-final", label: "flower-final", source: require("../../assets/Logos/flower-final.png") },
-  { id: "limited-supply-tag-copy", label: "limited-supply-tag copy", source: require("../../assets/Logos/limited-supply-tag copy.png") },
+  { id: "flower-emblem", label: "Flower Emblem", source: require("../../assets/Logos/Flower Emblem.png") },
+  { id: "limited-supply-tag", label: "limited-supply-tag", source: require("../../assets/Logos/limited-supply-tag.png") },
   { id: "plaid", label: "Plaid", source: require("../../assets/Logos/Plaid.png") },
   { id: "rosewhite", label: "Rosewhite", source: require("../../assets/Logos/Rosewhite.png") },
+  { id: "water", label: "Water", source: require("../../assets/Logos/Water.png") },
 ] as const;

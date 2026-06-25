@@ -19,7 +19,7 @@ export const mindsetQuotes = [
   "Pleasure or purpose—what are you building identity around?",
   "Refuse to be denied.",
   "Your feelings come from what you focus on",
-  "You label your reality—punishment, challenge, gift…",
+  "You label your reality—punishment, challenge, gift …",
   "Don’t exaggerate and don’t dwell cautiously forever",
   "Half effort, half-hearted results",
   "Fewer decisions, more direction",

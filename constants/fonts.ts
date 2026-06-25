@@ -14,13 +14,11 @@ import type { TextStyle } from "react-native";
  */
 export type FontPreset =
   | "system"
-  | "willg"
   | "perfectGirlSans"
-  | "perfectGirlScript"
   | "scaver"
-  | "ancientMedium"
   | "brownCookies"
-  | "neo";
+  | "ananda"
+  | "oldLondon";
 
 /** Default before Profile font cycle (or when not using the button). */
 export const DEFAULT_FONT_PRESET: FontPreset = "system";
@@ -31,24 +29,20 @@ export const FONT_PRESET = DEFAULT_FONT_PRESET;
 /** Cycle order for Profile font button — keep in sync with `FONT_REGISTRY` keys. */
 export const FONT_PRESET_ORDER: readonly FontPreset[] = [
   "system",
-  "willg",
   "perfectGirlSans",
-  "perfectGirlScript",
   "scaver",
-  "ancientMedium",
   "brownCookies",
-  "neo",
+  "ananda",
+  "oldLondon",
 ];
 
 export const FONT_PRESET_LABELS: Record<FontPreset, string> = {
   system: "System",
-  willg: "Willg",
   perfectGirlSans: "Perfect Girl Sans",
-  perfectGirlScript: "Perfect Girl Script",
   scaver: "Scaver",
-  ancientMedium: "Ancient Medium",
   brownCookies: "Brown Cookies",
-  neo: "Neo",
+  ananda: "Ananda",
+  oldLondon: "Old London",
 };
 
 type FontFamilies = {
@@ -59,40 +53,47 @@ type FontFamilies = {
 type FontPresetConfig = {
   families: FontFamilies;
   load: Record<string, number>;
+  /**
+   * Multiplier on scaled title `fontSize` for `screenTitle` line height.
+   * Decorative faces often report tight metrics — bump when glyphs clip vertically.
+   */
+  titleLineHeightScale?: number;
+  /**
+   * Extra left padding for `screenTitle` as a fraction of title `fontSize`.
+   * Some faces draw past their reported left bearing (horizontal clip on the first glyph).
+   */
+  titleHorizontalInsetScale?: number;
 };
+
+/** Default title line-height scale for custom fonts without an override. */
+const DEFAULT_TITLE_LINE_HEIGHT_SCALE = 1.34;
 
 export const FONT_REGISTRY = {
   system: {
     families: { regular: "", semibold: "" },
     load: {},
   },
-  willg: {
-    families: { regular: "Willg", semibold: "Willg" },
-    load: { Willg: require("../assets/fonts/Willg.ttf") },
-  },
   perfectGirlSans: {
     families: { regular: "PerfectGirlSansSerif", semibold: "PerfectGirlSansSerif" },
     load: { PerfectGirlSansSerif: require("../assets/fonts/PerfectGirl-SansSerif.otf") },
-  },
-  perfectGirlScript: {
-    families: { regular: "PerfectGirlScript", semibold: "PerfectGirlScript" },
-    load: { PerfectGirlScript: require("../assets/fonts/PerfectGirl-Script.otf") },
   },
   scaver: {
     families: { regular: "Scaver", semibold: "Scaver" },
     load: { Scaver: require("../assets/fonts/Scaver-Regular.ttf") },
   },
-  ancientMedium: {
-    families: { regular: "AncientMedium", semibold: "AncientMedium" },
-    load: { AncientMedium: require("../assets/fonts/Ancient Medium.ttf") },
-  },
   brownCookies: {
     families: { regular: "BrownCookies", semibold: "BrownCookies" },
     load: { BrownCookies: require("../assets/fonts/Brown Cookies.otf") },
   },
-  neo: {
-    families: { regular: "Neo", semibold: "Neo" },
-    load: { Neo: require("../assets/fonts/Neo.ttf") },
+  ananda: {
+    families: { regular: "Ananda", semibold: "Ananda" },
+    load: { Ananda: require("../assets/fonts/Ananda.ttf") },
+    titleLineHeightScale: 1.68,
+    titleHorizontalInsetScale: 0.14,
+  },
+  oldLondon: {
+    families: { regular: "OldLondon", semibold: "OldLondon" },
+    load: { OldLondon: require("../assets/fonts/Old London.ttf") },
   },
 } as const satisfies Record<FontPreset, FontPresetConfig>;
 
@@ -118,6 +119,20 @@ export function usesAppFont(preset: FontPreset = activeFontPreset): boolean {
 
 export function getFontFamilies(preset: FontPreset = activeFontPreset): FontFamilies {
   return FONT_REGISTRY[preset].families;
+}
+
+/** Scales `screenTitle` line height for the active (or given) preset. */
+export function getTitleLineHeightScale(preset: FontPreset = activeFontPreset): number {
+  const entry = FONT_REGISTRY[preset] as FontPresetConfig;
+  if (entry.titleLineHeightScale != null) return entry.titleLineHeightScale;
+  if (preset === "system") return 1.25;
+  return DEFAULT_TITLE_LINE_HEIGHT_SCALE;
+}
+
+/** Left inset for `screenTitle` as a fraction of title `fontSize` (0 = none). */
+export function getTitleHorizontalInsetScale(preset: FontPreset = activeFontPreset): number {
+  const entry = FONT_REGISTRY[preset] as FontPresetConfig;
+  return entry.titleHorizontalInsetScale ?? 0;
 }
 
 /** Merged map for `useFonts` — load every custom face once so cycling is instant. */
