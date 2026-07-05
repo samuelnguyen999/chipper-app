@@ -25,6 +25,8 @@
 | Icons | **@expo/vector-icons** (e.g. Ionicons) |
 | TypeScript | **strict**, `tsconfig` extends `expo/tsconfig.base` |
 | Deep linking | **`app.json` → `expo.scheme`: `chipperapp`** |
+| Backend | **Supabase** (`@supabase/supabase-js`) — anonymous auth; see **`lib/SUPABASE_STATE.md`** |
+| Local storage (auth) | **@react-native-async-storage/async-storage** — Supabase session persistence |
 
 
 
@@ -42,7 +44,7 @@
 
 | Path | Responsibility |
 |---|---|
-| `app/_layout.tsx` | Root `Stack`; wraps `ReflectionResponsesProvider` and `TabAccessProvider`; registers top-level groups/screens. |
+| `app/_layout.tsx` | Root `Stack`; `useAnonymousAuth` + fonts gate splash; wraps `ReflectionResponsesProvider`, `TabAccessProvider`, `FontPresetProvider`. |
 | `app/index.tsx` | Startup gate; redirects to `/(locked)` or `/(tabs)` after tab-access hydration. |
 
 ### 2) Route groups by app phase
@@ -75,6 +77,7 @@
 | Area | Location | Notes |
 |---|---|---|
 | UI token system | `constants/` | Shared colors, spacing/layout, typography, and scene shells via barrel exports. |
+| Supabase client + auth | `lib/supabase.ts`, `hooks/useAnonymousAuth.ts` | Env via `.env`; details in **`lib/SUPABASE_STATE.md`**. |
 | Runtime app config | `app.json`, `babel.config.js` | Linking/scheme + Babel plugin order (Reanimated plugin last). |
 | Package/runtime definitions | `package.json` | Dependency versions and scripts. |
 | Static assets | `assets/` | App icons/splash/media resources. |
@@ -83,6 +86,7 @@
 
 - Receive flow details: `components/today/receive/RECEIVE_STATE.md`
 - Reflect flow details: `components/today/reflect/REFLECT_STATE.md`
+- Supabase / anonymous auth: `lib/SUPABASE_STATE.md`
 
 **Gotcha:** Never pass a raw `{ screenOptions: ... }` object as a child of `<Stack>`; use `Stack.Screen` children and navigator props.
 
@@ -109,6 +113,8 @@
 
 - **Community:** Lists submitted reflections via **`CommunityReflectionCard`**, reusing **`CardShell`** from **`components/today/reflect/parts/CardShell.tsx`** (direct import avoids loading **`Reflect`** when only the shell is needed).
 
+- **Supabase anonymous auth:** **`lib/supabase.ts`** + **`hooks/useAnonymousAuth.ts`**; root layout waits for auth before rendering; sessions persist in AsyncStorage on Expo Go.
+
 
 
 Removed unused **`components/Receive.tsx`** and **`components/AppButton.tsx`** (nothing imported them). Use `components/today/*` feature modules and primitives from **`constants`** instead.
@@ -125,7 +131,8 @@ Removed unused **`components/Receive.tsx`** and **`components/AppButton.tsx`** (
 
 | Item | Severity | Notes |
 |------|----------|--------|
-| Reflection data **not persisted** | UX | In-memory only; lost on reload. |
+| Reflection data **not persisted** | UX | In-memory only; Supabase auth ready — table sync not wired yet. |
+| **`.env` required for Supabase** | Dev | Copy `.env.example` → `.env`; restart Expo after changes. |
 | **Expo Go vs Reanimated/Worklets** | Runtime | Mismatch → TurboModule/worklets crash; align SDK / clear cache / dev build. |
 | **Deep link / URL to Community while locked** | Low | **`useRedirectWhenTabsLocked`** sends user to Today; confirm UX if you rely on that URL. |
 | **Root Stack `screenOptions` footgun** | Dev | Invalid extra children on `<Stack>` still a React pitfall if refactoring. |
@@ -141,7 +148,7 @@ Removed unused **`components/Receive.tsx`** and **`components/AppButton.tsx`** (
 
 
 
-1. **Persist reflections** — AsyncStorage / MMKV / backend; hydrate **`ReflectionResponsesContext`** on startup.
+1. **Persist reflections to Supabase** — table + RLS on `auth.uid()`; insert on reflect submit; hydrate Community.
 
 2. **Receive landing polish** — Motion tuning; optional “returning user” skip flag.
 
@@ -167,7 +174,9 @@ Removed unused **`components/Receive.tsx`** and **`components/AppButton.tsx`** (
 
 ```bash
 
-npx expo start -c       # Metro + cache reset
+npx expo start -c       # Metro + cache reset (does not clear auth AsyncStorage on device)
+
+cp .env.example .env    # first-time Supabase setup (Windows: copy .env.example .env)
 
 npx expo install <pkg>  # Expo-pinned versions
 

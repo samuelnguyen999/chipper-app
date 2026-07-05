@@ -6,22 +6,24 @@ import { useEffect } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { FontPresetProvider } from "../components/profile/FontPresetContext";
 import { getAllFontLoadMap } from "../constants/fonts";
+import { useAnonymousAuth } from "../hooks/useAnonymousAuth";
 import { ReflectionResponsesProvider } from "../state/ReflectionResponsesContext";
 import { TabAccessProvider } from "../state/TabAccessContext";
 
 SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
+  const { loading: authLoading } = useAnonymousAuth();
   const [loaded, error] = useFonts(getAllFontLoadMap());
   const fontsReady = loaded || error;
 
   useEffect(() => {
-    if (fontsReady) {
+    if (fontsReady && !authLoading) {
       void SplashScreen.hideAsync();
     }
-  }, [fontsReady]);
+  }, [fontsReady, authLoading]);
 
-  if (!fontsReady) {
+  if (authLoading || !fontsReady) {
     return null;
   }
 
