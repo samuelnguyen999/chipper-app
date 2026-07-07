@@ -54,14 +54,17 @@ export function TabAccessProvider({ children }: { children: ReactNode }) {
 
   const mainTabsUnlocked = useMemo(() => {
     if (sessionUnlocked) return isHydrated;
+    const startAt = devFlags.startAt;
     const gateStorage =
-      devFlags.forceOnboarding ? { lastOnboardingDate: null } : storage;
+      startAt === "receive" || startAt === "reflect"
+        ? { lastOnboardingDate: null }
+        : storage;
     return shouldShowMainTabs({
       hydrated: isHydrated,
       storage: gateStorage,
-      devOverride: devFlags.forceMainTabs && !devFlags.forceOnboarding,
+      devOverride: startAt === "mainTabs",
     });
-  }, [devFlags.forceMainTabs, devFlags.forceOnboarding, isHydrated, sessionUnlocked, storage]);
+  }, [devFlags.startAt, isHydrated, sessionUnlocked, storage]);
 
   const unlockMainTabs = useCallback(() => {
     const today = getLocalCalendarDate();

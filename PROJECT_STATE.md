@@ -78,7 +78,7 @@
 |---|---|---|
 | UI token system | `constants/` | Shared colors, spacing/layout, typography, and scene shells via barrel exports. |
 | Supabase client + auth | `lib/supabase.ts`, `hooks/useAnonymousAuth.ts` | Env via `.env`; details in **`lib/SUPABASE_STATE.md`**. |
-| Runtime app config | `app.json`, `babel.config.js` | Linking/scheme + Babel plugin order (Reanimated plugin last). |
+| Runtime app config | `app.json`, `babel.config.js` | Linking/scheme, **`devStartAt`** dev entry (see below), Babel plugin order. |
 | Package/runtime definitions | `package.json` | Dependency versions and scripts. |
 | Static assets | `assets/` | App icons/splash/media resources. |
 
@@ -166,7 +166,57 @@ Removed unused **`components/Receive.tsx`** and **`components/AppButton.tsx`** (
 
 ---
 
+## Developer shortcuts (`app.json`)
 
+Use **`expo.extra.devStartAt`** to pick where the app opens during development. This saves time when you are iterating on one part of the flow.
+
+**File:** `app.json` → `expo.extra`
+
+```json
+"extra": {
+  "appEnv": "development",
+  "devStartAt": "reflect"
+}
+```
+
+**After any change to `app.json`, restart Metro:**
+
+```bash
+npx expo start --clear
+```
+
+### `devStartAt` tiers
+
+| Value | Where you land | Use when |
+|--------|----------------|----------|
+| `"receive"` | `/(locked)` → **Receive** landing (quote, ponder, continue) | Testing the full daily onboarding from the top |
+| `"reflect"` | `/(locked)` → **Reflect** (card stack; Receive skipped) | Testing reflect UI, focus transition, submit |
+| `"mainTabs"` | `/(tabs)` → Today recap, Community, Profile | Testing post-unlock tabs without submitting a reflection |
+
+**Omit `devStartAt`** (or set `appEnv` to `"production"`) to use the **normal daily gate**: main tabs only if the user completed Reflect today (`lastOnboardingDate` in AsyncStorage).
+
+### How it is wired
+
+| Piece | Role |
+|--------|------|
+| `state/onboardingGate.ts` | `resolveDevGateFlags()` reads `devStartAt` (dev / non-production only) |
+| `state/TabAccessContext.tsx` | `mainTabs` tier unlocks tabs; `receive` / `reflect` keep the locked route |
+| `components/today/TodayExperience.tsx` | `reflect` tier sets initial screen to Reflect instead of Receive |
+| `app/index.tsx` | Redirects to `/(locked)` or `/(tabs)` from tab-access state |
+
+### Production / App Store builds
+
+- Set **`appEnv": "production"`** in release `app.json` / EAS config, or ensure **`devStartAt` is not set**.
+- `resolveDevGateFlags()` always returns `startAt: null` in production — real users always get the daily onboarding gate.
+
+### Legacy flags (avoid)
+
+Older booleans still map for compatibility but prefer **`devStartAt`**:
+
+- `forceOnboarding: true` → same as `"receive"`
+- `forceMainTabs: true` → same as `"mainTabs"`
+
+---
 
 ## Quick commands
 

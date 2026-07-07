@@ -68,7 +68,8 @@ const DRAG_RESET_MS = 2000;
 // Card frame (max width/height from window)
 // -----------------------------------------------------------------------------
 
-function useReflectCardFrame() {
+/** Shared playing-card frame for stack + focus grow transition */
+export function useReflectCardFrame() {
   const { width: sw, height: sh } = useWindowDimensions();
   return useMemo(() => {
     const maxW = Math.min(sw * CARD_WIDTH_SCREEN_FRAC, CARD_MAX_WIDTH);
@@ -201,14 +202,19 @@ function applyDepthTargets(
 
 type ReflectCardStackProps = {
   choices: readonly ReflectionChoice[];
-  onSelectChoice: (choice: ReflectionChoice) => void;
+  initialActiveIndex?: number;
+  onSelectChoice: (choice: ReflectionChoice, index: number) => void;
 };
 
 // -----------------------------------------------------------------------------
 // ReflectCardStack — state, gestures, arrows
 // -----------------------------------------------------------------------------
 
-export default function ReflectCardStack({ choices, onSelectChoice }: ReflectCardStackProps) {
+export default function ReflectCardStack({
+  choices,
+  initialActiveIndex = 0,
+  onSelectChoice,
+}: ReflectCardStackProps) {
   const n = choices.length;
   if (n < 1 || n > 3) {
     throw new Error("ReflectCardStack supports 1–3 choices (current reflect lenses).");
@@ -216,11 +222,12 @@ export default function ReflectCardStack({ choices, onSelectChoice }: ReflectCar
 
   const { width: cardWidth, height: cardHeight } = useReflectCardFrame();
 
-  const [activeIndex, setActiveIndex] = useState(0);
+  const clampedInitial = Math.max(0, Math.min(n - 1, initialActiveIndex));
+  const [activeIndex, setActiveIndex] = useState(clampedInitial);
   const [purposeExpanded, setPurposeExpanded] = useState(false);
   const togglePurpose = useCallback(() => setPurposeExpanded((p) => !p), []);
 
-  const activeIdxSV = useSharedValue(0);
+  const activeIdxSV = useSharedValue(clampedInitial);
   const dragX = useSharedValue(0);
   const outgoingIndexSV = useSharedValue(-1);
   const outgoingHandoffX = useSharedValue(0);
@@ -330,7 +337,7 @@ export default function ReflectCardStack({ choices, onSelectChoice }: ReflectCar
               cardHeight={cardHeight}
               purposeExpanded={purposeExpanded}
               onTogglePurpose={togglePurpose}
-              onSelectChoice={() => onSelectChoice(item)}
+              onSelectChoice={() => onSelectChoice(item, i)}
             />
           ))}
         </View>

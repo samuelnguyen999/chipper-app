@@ -28,7 +28,7 @@ export type ShouldShowMainTabsInput = {
   hydrated: boolean;
   storage: OnboardingGateStorage;
   remote?: OnboardingGateRemote;
-  /** Skip daily gate (dev `forceMainTabs`). Ignored when {@link DevGateFlags.forceOnboarding}. */
+  /** Skip daily gate (dev `devStartAt: "mainTabs"`). */
   devOverride?: boolean;
   /** Override “today” (tests). Defaults to {@link getLocalCalendarDate}. */
   today?: string;
@@ -53,12 +53,24 @@ export function shouldShowMainTabs({
   return lastOnboardingDate === today;
 }
 
+export type DevStartAt = "receive" | "reflect" | "mainTabs";
+
 export type DevGateFlags = {
-  /** Skip onboarding; go straight to main tabs. */
-  forceMainTabs: boolean;
-  /** Every cold start uses locked onboarding until flow completes this session. */
-  forceOnboarding: boolean;
+  /**
+   * Dev / non-production entry point. `null` = normal daily onboarding gate.
+   * - receive — locked route, Receive landing
+   * - reflect — locked route, Reflect (skip Receive)
+   * - mainTabs — skip to tabs
+   */
+  startAt: DevStartAt | null;
 };
+
+function parseDevStartAt(value: unknown): DevStartAt | null {
+  if (value === "receive" || value === "reflect" || value === "mainTabs") {
+    return value;
+  }
+  return null;
+}
 
 function canUseDevGateFlags(): boolean {
   const extra = Constants.expoConfig?.extra as { appEnv?: string } | undefined;
@@ -67,18 +79,28 @@ function canUseDevGateFlags(): boolean {
   return devBuild || nonProduction;
 }
 
-/** Dev / non-production only. Production always returns both false. */
+/** Dev / non-production only. Production always returns `startAt: null`. */
 export function resolveDevGateFlags(): DevGateFlags {
   if (!canUseDevGateFlags()) {
-    return { forceMainTabs: false, forceOnboarding: false };
+    return { startAt: null };
   }
   const extra = Constants.expoConfig?.extra as
-    | { forceMainTabs?: boolean; forceOnboarding?: boolean }
+    | {
+        devStartAt?: unknown;
+        /** @deprecated Use `devStartAt` */
+        forceMainTabs?: boolean;
+        /** @deprecated Use `devStartAt: "receive"` */
+        forceOnboarding?: boolean;
+      }
     | undefined;
-  return {
-    forceMainTabs: extra?.forceMainTabs === true,
-    forceOnboarding: extra?.forceOnboarding === true,
-  };
+
+  const fromTier = parseDevStartAt(extra?.devStartAt);
+  if (fromTier) return { startAt: fromTier };
+
+  if (extra?.forceMainTabs === true) return { startAt: "mainTabs" };
+  if (extra?.forceOnboarding === true) return { startAt: "receive" };
+
+  return { startAt: null };
 }
 
 const STORAGE_KEYS = {

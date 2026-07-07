@@ -1,7 +1,32 @@
-import { useEffect, useState } from "react";
-import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
-import Animated, { useAnimatedStyle, useSharedValue, withSpring } from "react-native-reanimated";
-import { colors, font, layout, scaleFontSize, scaleLineHeight, screen, spacing, textSize, textStyles } from "../../../../constants";
+import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  Keyboard,
+  Pressable,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+  type TextInput as TextInputType,
+} from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import Animated, {
+  Easing,
+  runOnJS,
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from "react-native-reanimated";
+import {
+  colors,
+  font,
+  scaleFontSize,
+  scaleLineHeight,
+  spacing,
+  textSize,
+  textStyles,
+} from "../../../../constants";
+import CardShell from "./CardShell";
+import { useReflectCardFrame } from "./ReflectCardStack";
 
 export type FocusChoice = {
   mode: string;
@@ -9,164 +34,354 @@ export type FocusChoice = {
   purpose: string;
 };
 
+export type ReflectionVisibility = "public" | "private";
+
 type FocusViewProps = {
   choice: FocusChoice;
+  /** Increment from parent to run shrink-out then {@link FocusViewProps.onBack}. */
+  backNonce?: number;
   onBack: () => void;
-  contentBottomInset?: number;
   onSubmitResponse: (input: { mode: string; prompt: string; response: string }) => void;
 };
 
-type LensVariant = "zoom" | "stretchY" | "stretchX";
-const SPRING_GROUND = { damping: 17, stiffness: 190, mass: 1 };
-const SPRING_SOFT = { damping: 16, stiffness: 170, mass: 1 };
-
-function variantForMode(mode: string): LensVariant {
-  switch (mode) {
-    case "Ground":
-      return "zoom";
-    case "Understand":
-      return "stretchY";
-    case "Align":
-      return "stretchX";
-    default:
-      return "zoom";
-  }
+const GROW_MS = 2000;
+/** Soft ease-in-out — no sharp acceleration at start or end */
+const GROW_EASING = Easing.inOut(Easing.cubic);
+const GROW_TIMING = { duration: GROW_MS, easing: GROW_EASING };
+const RESPONSE_FADE_MS = 8500;
+const VISIBILITY_BTN = 32;
+const VISIBILITY_GAP = 2;
+const VISIBILITY_PAD = 2;
+const VISIBILITY_TRACK_W = VISIBILITY_BTN * 2 + VISIBILITY_GAP + VISIBILITY_PAD * 2;
+const TOGGLE_MS = 220;
+const TOGGLE_TIMING = { duration: TOGGLE_MS, easing: GROW_EASING };
+/** Match ChoiceCard: prompt is vertically centered on the full card face (mode overlays in stack). */
+function promptStartOffset(cardHeight: number): number {
+  const innerHeight = cardHeight - spacing.lg * 2;
+  const modeHeight = Math.ceil(scaleFontSize("body") * 1.2);
+  const promptHeight = scaleLineHeight("body");
+  const promptTopInFlow = modeHeight + spacing.xs;
+  return Math.max(0, innerHeight / 2 - promptTopInFlow - promptHeight / 2);
 }
 
-function useLensEntrance(mode: string) {
-  const opacity = useSharedValue(0);
-  const scale = useSharedValue(1);
-  const scaleX = useSharedValue(1);
-  const scaleY = useSharedValue(1);
-  const translateY = useSharedValue(0);
+function VisibilityToggle({
+  value,
+  onChange,
+}: {
+  value: ReflectionVisibility;
+  onChange: (value: ReflectionVisibility) => void;
+}) {
+  const isPrivate = value === "private";
+  const thumbX = useSharedValue(0);
 
   useEffect(() => {
-    const variant = variantForMode(mode);
-    if (variant === "zoom") {
-      opacity.value = 0;
-      scale.value = 0.82;
-      scaleX.value = 1;
-      scaleY.value = 1;
-      translateY.value = 0;
-      opacity.value = withSpring(1, SPRING_GROUND);
-      scale.value = withSpring(1, SPRING_GROUND);
-      return;
-    }
-    if (variant === "stretchY") {
-      opacity.value = 0;
-      scale.value = 1;
-      scaleX.value = 1;
-      scaleY.value = 0.08;
-      translateY.value = 44;
-      opacity.value = withSpring(1, SPRING_SOFT);
-      scaleY.value = withSpring(1, SPRING_SOFT);
-      translateY.value = withSpring(0, SPRING_SOFT);
-      return;
-    }
-    opacity.value = 0;
-    scale.value = 1;
-    scaleX.value = 0.08;
-    scaleY.value = 1;
-    translateY.value = 0;
-    opacity.value = withSpring(1, SPRING_SOFT);
-    scaleX.value = withSpring(1, SPRING_SOFT);
-  }, [mode]);
+    thumbX.value = withTiming(isPrivate ? 0 : VISIBILITY_BTN, TOGGLE_TIMING);
+  }, [isPrivate, thumbX]);
 
-  return useAnimatedStyle(() => ({
-    opacity: opacity.value,
-    transform: [
-      { translateY: translateY.value },
-      { scale: scale.value },
-      { scaleX: scaleX.value },
-      { scaleY: scaleY.value },
-    ],
+  const thumbStyle = useAnimatedStyle(() => ({
+    transform: [{ translateX: thumbX.value }],
   }));
+
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={
+        isPrivate ? "Private. Tap to switch to public." : "Public. Tap to switch to private."
+      }
+      onPress={() => onChange(isPrivate ? "public" : "private")}
+      style={({ pressed }) => [styles.visibilityTrack, pressed && styles.visibilityTrackPressed]}
+    >
+      <Animated.View pointerEvents="none" style={[styles.visibilityThumb, thumbStyle]} />
+      <View style={styles.visibilityBtn}>
+        <Ionicons
+          name="lock-closed-outline"
+          size={18}
+          color={isPrivate ? colors.onPrimary : colors.textMuted}
+        />
+      </View>
+      <View style={styles.visibilityBtn}>
+        <Ionicons
+          name="globe-outline"
+          size={20}
+          color={!isPrivate ? colors.onPrimary : colors.textMuted}
+          style={styles.visibilityGlobeIcon}
+        />
+      </View>
+    </Pressable>
+  );
 }
 
 export default function FocusView({
   choice,
+  backNonce = 0,
   onBack,
-  contentBottomInset = 0,
   onSubmitResponse,
 }: FocusViewProps) {
   const { mode, prompt } = choice;
-  const animatedStyle = useLensEntrance(mode);
+  const { width: cardWidth, height: cardHeight } = useReflectCardFrame();
   const [response, setResponse] = useState("");
-  useEffect(() => setResponse(""), [mode]);
+  const [visibility, setVisibility] = useState<ReflectionVisibility>("private");
+  const [slotSize, setSlotSize] = useState({ width: 0, height: 0 });
+  const isExitingRef = useRef(false);
+  const inputRef = useRef<TextInputType>(null);
+
+  const canSubmit = response.trim().length > 0;
+
+  const dismissKeyboard = useCallback(() => {
+    inputRef.current?.blur();
+    Keyboard.dismiss();
+  }, []);
+
+  const handleSubmit = useCallback(() => {
+    const trimmed = response.trim();
+    if (!trimmed) return;
+    dismissKeyboard();
+    onSubmitResponse({ mode, prompt, response: trimmed });
+    setResponse("");
+  }, [dismissKeyboard, mode, onSubmitResponse, prompt, response]);
+
+  const animW = useSharedValue(cardWidth);
+  const animH = useSharedValue(cardHeight);
+  const promptTy = useSharedValue(promptStartOffset(cardHeight));
+  const responseOpacity = useSharedValue(0);
+  const toggleReveal = useSharedValue(0);
+
+  useEffect(() => {
+    toggleReveal.value = withTiming(canSubmit ? 1 : 0, TOGGLE_TIMING);
+  }, [canSubmit, toggleReveal]);
+
+  useEffect(() => {
+    setResponse("");
+    setVisibility("private");
+  }, [mode]);
+
+  useEffect(() => {
+    if (isExitingRef.current) return;
+    animW.value = cardWidth;
+    animH.value = cardHeight;
+    promptTy.value = promptStartOffset(cardHeight);
+    responseOpacity.value = 0;
+  }, [mode, cardWidth, cardHeight, animW, animH, promptTy, responseOpacity]);
+
+  useEffect(() => {
+    if (slotSize.width < 1 || slotSize.height < 1 || isExitingRef.current) return;
+
+    animW.value = withTiming(slotSize.width, GROW_TIMING);
+    animH.value = withTiming(slotSize.height, GROW_TIMING);
+    promptTy.value = withTiming(0, GROW_TIMING);
+    responseOpacity.value = withTiming(1, {
+      duration: RESPONSE_FADE_MS,
+      easing: GROW_EASING,
+    });
+  }, [slotSize.width, slotSize.height, animW, animH, promptTy, responseOpacity]);
+
+  useEffect(() => {
+    if (backNonce < 1 || isExitingRef.current) return;
+    isExitingRef.current = true;
+
+    const promptOffset = promptStartOffset(cardHeight);
+    responseOpacity.value = withTiming(0, {
+      duration: GROW_MS * 0.35,
+      easing: GROW_EASING,
+    });
+    animW.value = withTiming(cardWidth, GROW_TIMING);
+    animH.value = withTiming(cardHeight, GROW_TIMING);
+    promptTy.value = withTiming(promptOffset, GROW_TIMING, (finished) => {
+      if (finished) runOnJS(onBack)();
+    });
+  }, [backNonce, cardWidth, cardHeight, animW, animH, promptTy, responseOpacity, onBack]);
+
+  const cardStyle = useAnimatedStyle(() => ({
+    width: animW.value,
+    height: animH.value,
+  }));
+
+  const promptStyle = useAnimatedStyle(() => ({
+    transform: [{ translateY: promptTy.value }],
+  }));
+
+  const responseStyle = useAnimatedStyle(() => ({
+    opacity: responseOpacity.value,
+  }));
+
+  const toggleRevealStyle = useAnimatedStyle(() => ({
+    width: toggleReveal.value * VISIBILITY_TRACK_W,
+    opacity: toggleReveal.value,
+    transform: [{ translateX: (1 - toggleReveal.value) * -16 }],
+  }));
 
   return (
-    <ScrollView
-      style={screen.scroll}
-      contentContainerStyle={[
-        styles.scrollContent,
-        { ...screen.scrollContent, paddingBottom: layout.screenScrollBottomPadding + contentBottomInset },
-      ]}
-      keyboardShouldPersistTaps="handled"
-      showsVerticalScrollIndicator={false}
-    >
-      <Animated.View style={[styles.animatedWrap, animatedStyle]}>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Back to all reflection lenses"
-          onPress={onBack}
-          hitSlop={12}
-          style={({ pressed }) => [styles.backRow, pressed && styles.backPressed]}
+    <View style={styles.main}>
+      <View
+        style={styles.slot}
+        onLayout={(e) => {
+            const { width, height } = e.nativeEvent.layout;
+            setSlotSize((prev) =>
+              prev.width === width && prev.height === height ? prev : { width, height },
+            );
+          }}
         >
-          <Text style={[textSize("lg"), styles.backChevron]}>←</Text>
-          <Text style={[textStyles.buttonLabel, styles.backLabel]}>All lenses</Text>
-        </Pressable>
-        <View style={styles.focusBlock}>
-          <Text style={[font("semibold"), styles.mode, textSize("sm")]}>{mode}</Text>
-          <Text
-            style={[
-              font("semibold"),
-              styles.prompt,
-              { fontSize: scaleFontSize("title") + 2, lineHeight: scaleLineHeight("body") + 8 },
+          <Animated.View style={[styles.cardWrap, cardStyle]}>
+            <CardShell style={styles.card}>
+              <Text style={[font("semibold"), styles.mode, textSize("body")]}>{mode}</Text>
+              <Animated.View style={promptStyle}>
+                <Text
+                  style={[
+                    font("semibold"),
+                    styles.prompt,
+                    textSize("title"),
+                    { lineHeight: scaleLineHeight("body") },
+                  ]}
+                >
+                  “{prompt}”
+                </Text>
+              </Animated.View>
+              <Animated.View style={[styles.responseBlock, responseStyle]}>
+                <TextInput
+                  ref={inputRef}
+                  value={response}
+                  onChangeText={setResponse}
+                  placeholder="Respond here..."
+                  placeholderTextColor={colors.textMuted}
+                  style={[font("regular"), styles.responseInput, textSize("md")]}
+                  multiline
+                  textAlignVertical="top"
+                  returnKeyType="done"
+                  blurOnSubmit
+                  onSubmitEditing={dismissKeyboard}
+                />
+              </Animated.View>
+            </CardShell>
+          </Animated.View>
+        </View>
+
+        <View style={styles.footerRow} accessibilityRole="toolbar">
+          <Animated.View
+            style={[styles.footerToggleSlot, toggleRevealStyle]}
+            pointerEvents={canSubmit ? "auto" : "none"}
+          >
+            <VisibilityToggle value={visibility} onChange={setVisibility} />
+          </Animated.View>
+          <Pressable
+              accessibilityRole="button"
+            accessibilityLabel="Submit reflection"
+            accessibilityState={{ disabled: !canSubmit }}
+            disabled={!canSubmit}
+            hitSlop={8}
+            onPress={handleSubmit}
+            style={({ pressed }) => [
+              styles.submitHit,
+              !canSubmit && styles.submitDisabled,
+              pressed && canSubmit && styles.submitPressed,
             ]}
           >
-            “{prompt}”
-          </Text>
-          <Text style={[textStyles.caption, styles.responseLabel]}>Your response</Text>
-          <TextInput
-            value={response}
-            onChangeText={setResponse}
-            placeholder="Respond here..."
-            placeholderTextColor={colors.textMuted}
-            style={[font("regular"), styles.responseInput, textSize("md")]}
-            returnKeyType="done"
-            onSubmitEditing={() => {
-              const trimmed = response.trim();
-              if (!trimmed) return;
-              onSubmitResponse({ mode, prompt, response: trimmed });
-              setResponse("");
-              onBack();
-            }}
-            blurOnSubmit
-          />
+            <Text style={[textStyles.buttonLabel, styles.submitLabel, !canSubmit && styles.submitLabelDisabled]}>
+              Submit
+            </Text>
+          </Pressable>
         </View>
-      </Animated.View>
-    </ScrollView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  scrollContent: { flexGrow: 1, justifyContent: "flex-start" },
-  animatedWrap: { width: "100%", alignSelf: "stretch" },
-  backRow: { flexDirection: "row", alignItems: "center", gap: spacing.sm, alignSelf: "flex-start", marginBottom: spacing.xl, paddingVertical: spacing.xs },
-  backPressed: { opacity: 0.7 },
-  backChevron: { color: colors.primary },
-  backLabel: { color: colors.primary },
-  focusBlock: { width: "100%", alignItems: "stretch" },
-  mode: { letterSpacing: 1, color: colors.accent, textTransform: "uppercase", marginBottom: spacing.md },
-  prompt: { color: colors.text, marginBottom: spacing.xxl },
-  responseLabel: { marginTop: spacing.xxl, marginBottom: spacing.sm, textTransform: "uppercase", letterSpacing: 0.5 },
-  responseInput: {
-    borderWidth: 1,
-    borderColor: colors.borderSubtle,
-    borderRadius: spacing.sm,
-    backgroundColor: colors.surfaceCard,
-    color: colors.text,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.md,
+  main: {
+    flex: 1,
+    width: "100%",
+    minHeight: 0,
   },
+  slot: {
+    flex: 1,
+    width: "100%",
+    minHeight: 0,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  cardWrap: {
+    maxWidth: "100%",
+  },
+  card: {
+    flex: 1,
+    width: "100%",
+    minHeight: 0,
+    overflow: "hidden",
+  },
+  mode: {
+    color: colors.accent,
+    marginBottom: spacing.xs,
+  },
+  prompt: {
+    color: colors.text,
+    textAlign: "center",
+    marginBottom: spacing.md,
+  },
+  responseBlock: {
+    flex: 1,
+    minHeight: 0,
+    marginTop: spacing.sm,
+  },
+  responseInput: {
+    flex: 1,
+    color: colors.text,
+    backgroundColor: "transparent",
+    paddingHorizontal: 0,
+    paddingVertical: spacing.xs,
+    minHeight: 120,
+  },
+  /** Matches ReflectCardStack `arrowsRow` — reserve space for future actions */
+  footerRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    minHeight: 44,
+    paddingTop: spacing.sm,
+    paddingBottom: spacing.xs,
+  },
+  footerToggleSlot: {
+    overflow: "hidden",
+  },
+  visibilityTrack: {
+    flexDirection: "row",
+    alignItems: "center",
+    width: VISIBILITY_TRACK_W,
+    backgroundColor: "transparent",
+    borderWidth: 1,
+    borderColor: colors.textMuted,
+    borderRadius: (VISIBILITY_BTN + VISIBILITY_PAD * 2) / 2,
+    padding: VISIBILITY_PAD,
+    gap: VISIBILITY_GAP,
+    position: "relative",
+    overflow: "hidden",
+  },
+  visibilityTrackPressed: {
+    opacity: 0.75,
+  },
+  visibilityThumb: {
+    position: "absolute",
+    top: VISIBILITY_PAD,
+    left: VISIBILITY_PAD,
+    width: VISIBILITY_BTN,
+    height: VISIBILITY_BTN,
+    borderRadius: VISIBILITY_BTN / 2,
+    backgroundColor: colors.textMuted,
+  },
+  visibilityBtn: {
+    width: VISIBILITY_BTN,
+    height: VISIBILITY_BTN,
+    borderRadius: VISIBILITY_BTN / 2,
+    alignItems: "center",
+    justifyContent: "center",
+    zIndex: 1,
+  },
+  visibilityGlobeIcon: {
+    transform: [{ translateX: -1.5 }, { translateY: 0}],
+  },
+  submitHit: {
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+  },
+  submitPressed: { opacity: 0.75 },
+  submitDisabled: { opacity: 0.4 },
+  submitLabel: { color: colors.primary },
+  submitLabelDisabled: { color: colors.textMuted },
 });

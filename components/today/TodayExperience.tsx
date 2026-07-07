@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { StyleSheet, View } from "react-native";
 import { screen } from "../../constants";
+import { resolveDevGateFlags } from "../../state/onboardingGate";
 import ReceiveLanding from "./receive";
 import Reflect from "./reflect";
 
@@ -9,7 +10,8 @@ type TodayExperienceProps = {
 };
 
 export default function TodayExperience({ onUnlocked }: TodayExperienceProps) {
-  const [showReflect, setShowReflect] = useState(false);
+  const devStartAt = resolveDevGateFlags().startAt;
+  const [showReflect, setShowReflect] = useState(devStartAt === "reflect");
 
   return (
     <View style={styles.container}>
