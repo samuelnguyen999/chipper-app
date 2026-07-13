@@ -31,7 +31,7 @@
     ],
     "extra": {
       "appEnv": "development",
-      "devStartAt": "reflect"
+      "devStartAt": "receive"
     }
   }
 }

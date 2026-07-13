@@ -28,4 +28,7 @@ export const resilienceQuotes = [
   "Where your fear is, there is your task",
   "Pain brings out passion and aliveness",
   "You've made it through 100% of your difficult days.",
+  "When the road gets bumpy, you don't leave the car, you put your seatbelt on",
+  "A winner is a loser who tried one. More. Time.",
+  "Temporary emotions should not make permanent decisions",
 ] as const;

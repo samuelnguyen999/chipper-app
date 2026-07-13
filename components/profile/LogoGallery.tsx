@@ -13,9 +13,21 @@ import { colors, layout, radii, spacing, textStyles } from "../../constants";
 import { profileGalleryLayout } from "./config";
 import { profileLogos, type ProfileLogo } from "./logoAssets";
 
+/** Fisher-Yates shuffle — returns a new array, does not mutate the input. */
+function shuffle<T>(items: readonly T[]): T[] {
+  const result = [...items];
+  for (let i = result.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [result[i], result[j]] = [result[j], result[i]];
+  }
+  return result;
+}
+
 export default function LogoGallery() {
   const { width: windowWidth } = useWindowDimensions();
   const [selected, setSelected] = useState<ProfileLogo | null>(null);
+  // Randomize logo + merch order once per mount (stable while browsing).
+  const [galleryItems] = useState(() => shuffle(profileLogos));
 
   const horizontalPad = layout.screenPadding * 2;
   const columnGap = layout.screenColumnGap;
@@ -47,7 +59,7 @@ export default function LogoGallery() {
   return (
     <>
       <FlatList
-        data={profileLogos}
+        data={galleryItems}
         keyExtractor={(item) => item.id}
         numColumns={profileGalleryLayout.columns}
         renderItem={renderItem}

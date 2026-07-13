@@ -50,7 +50,6 @@
 
 - **Edit copy:** `quotes/<lane>.ts`
 - **Edit weekday mapping:** `quotes/dailyQuotes.ts` → `WEEKDAY_TO_CATEGORY`
-- **Tooling order:** `QUOTE_CATEGORY_ORDER` in `dailyQuotes.ts` is for iteration / exports—not the weekday order.
 
 ---
 

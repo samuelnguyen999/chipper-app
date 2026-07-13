@@ -20,4 +20,9 @@ export const identityQuotes = [
   "The more you know yourself, the more power you have",
   "Let go of the need to be understood",
   "More battles, more wins",
+  "Why skip what moves you forward?",
+  "The cold water does not get warmer if you jump late",
+  "No one is you and thats your superpower",
+  "Do I need more information, or do I need more courage?",
+  "If you fake bravery when you're terrified, that is bravery"
 ] as const;

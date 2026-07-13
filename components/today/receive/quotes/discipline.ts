@@ -26,4 +26,9 @@ export const disciplineQuotes = [
   "Be intentional with time—time wasted compounds",
   "Knowing better changes nothing without doing better",
   "To know something and not apply it is to not know it",
+  "Consistancy compounds in a way that intesity never can",
+  "A habit that survives your worst days becomes your greatest strength",
+  "Consistency turns potential into proof",
+  "If you show up every day the results won't have a choice",
+  "Commit every day without negotiation. Remove the decision. Stop asking if today is the day-just show up. Excuses fade, resistance weekens, and discipline becomes who you are.",
 ] as const;

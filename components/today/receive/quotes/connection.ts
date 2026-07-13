@@ -18,4 +18,7 @@ export const connectionQuotes = [
   "Connection beats winning the argument",
   "Gratitude toward people changes how you show up",
   "Show up consistently; reliability is love in motion",
+  "When you focus on the good, the good gets better.",
+  "Trying to fit in takes you further from your people",
+  "If one only wished to be happy, this could be easily accomplished; but we wish to be happier than other people, and this is always difficult, for we believe others to be happier than they are. -Montesquieu",
 ] as const;

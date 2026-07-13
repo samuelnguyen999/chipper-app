@@ -31,4 +31,11 @@ export const mindsetQuotes = [
   "The world is a projection of your state of being",
   "The level of confidence dictates the level of achievement",
   "Your limits are just edges of your perception",
+  "if you don't remove somethings from your life, they will remove the life from you",
+  "Worrying is like worshiping the problem",
+  "Knowledge is unfinished until lived",
+  "Never risk what you have and need for what you don't have and don't need",
+  "Letting go means giving the future version of yourself a chance",
+  "We have two lives, and the second one starts when we realize we only have one",
+  "If you don't like something, change it. If you can't change it, change the way you think about it.",
 ] as const;

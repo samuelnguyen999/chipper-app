@@ -24,16 +24,6 @@ export const WEEKDAY_TO_CATEGORY = [
 
 export type QuoteCategory = (typeof WEEKDAY_TO_CATEGORY)[number];
 
-export const QUOTE_CATEGORY_ORDER: readonly QuoteCategory[] = [
-  "faith",
-  "action",
-  "discipline",
-  "mindset",
-  "identity",
-  "resilience",
-  "connection",
-];
-
 export const DAILY_QUOTES: Record<QuoteCategory, readonly string[]> = {
   faith: faithQuotes,
   action: actionQuotes,

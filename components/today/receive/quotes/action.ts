@@ -30,4 +30,10 @@ export const actionQuotes = [
   "More experience, more clarity",
   "Autotelicity: love and play in the work",
   "Mastery: thirst to become excellent",
+  "Look Ahead. That's where life happens.",
+  "Courage comes before confidence.",
+  "Never consume without producing.",
+  "Don't waste time chasing butterflies, mend your garden, and the butterflies will come.",
+  "Your environment will change you faster than motivation ever will.",
+  "Life isn't about finding yourself. It's about creating yourself.",
 ] as const;
