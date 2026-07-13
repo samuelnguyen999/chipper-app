@@ -74,6 +74,7 @@ function parseDevStartAt(value: unknown): DevStartAt | null {
 
 function canUseDevGateFlags(): boolean {
   const extra = Constants.expoConfig?.extra as { appEnv?: string } | undefined;
+  if (extra?.appEnv === "production") return false;
   const nonProduction = extra?.appEnv != null && extra.appEnv !== "production";
   const devBuild = typeof __DEV__ !== "undefined" && __DEV__;
   return devBuild || nonProduction;

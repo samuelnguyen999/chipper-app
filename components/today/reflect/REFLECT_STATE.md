@@ -13,7 +13,7 @@
 | Layer | Path | Responsibility |
 |---|---|---|
 | Copy + lens list | `config.ts` | `reflectionPromptByMode`, `reflectionChoices`, `ReflectionChoice` type. |
-| UI orchestration | `Reflect.tsx` | List vs focus view, safe-area padding when tabs locked, submit → `addResponse` → `unlockMainTabs` → `onUnlocked`. |
+| UI orchestration | `Reflect.tsx` | List vs focus view, safe-area padding when tabs locked, submit → `saveReflection` → `unlockMainTabs` → `onUnlocked`. |
 | Atoms | `parts/*` | Presentational only — no tab unlock or global response writes. |
 | Public API | `index.ts` | Default **`Reflect`**, config exports. |
 
@@ -37,20 +37,20 @@
 
 ## Submission and unlock behavior
 
-On submit from **`FocusView`** (keyboard Done with non-empty trimmed text), **`Reflect.tsx`** `onSubmitResponse`:
+On submit from **`FocusView`**, **`Reflect.tsx`** `onSubmitResponse`:
 
-1. `addResponse({ mode, prompt, response })` from **`ReflectionResponsesContext`** — returns **`false`** if empty after trim (should not happen if `FocusView` guards correctly).
-2. If **`true`**: `unlockMainTabs()` from **`TabAccessContext`**.
-3. Then optional **`onUnlocked()`** (locked route uses this for `router.replace("/(tabs)")`).
+1. `saveReflection({ cardType, question, response, isPublic })` via **`lib/reflections.ts`** — persists to Supabase `reflections` table.
+2. On success: `unlockMainTabs()` from **`TabAccessContext`**, then optional **`onUnlocked()`** (locked route uses this for `router.replace("/(tabs)")`).
+3. On failure: error message shown; no unlock.
 
 ---
 
-## Reflection response state contract
+## Reflection persistence
 
 | API | Behavior |
 |---|---|
-| `addResponse({ mode, prompt, response })` | Trims response; returns `false` on empty input; otherwise prepends a new entry and returns `true`. |
-| `responses` | Ordered newest-first; consumed by Community and any recap that reads submitted data. |
+| `saveReflection(...)` | Inserts row for current user; `is_public` from visibility toggle. Supabase `reflections` table is the source of truth. |
+| `getTodaysCommunity()` | Fetches today's public reflections for Community tab. |
 
 ---
 
@@ -64,7 +64,7 @@ Update **`reflectionPromptByMode`** in **`config.ts`** while keeping stable **`m
 
 - **`components/today/TodayExperience.tsx`** — default-imports **`./reflect`** (`Reflect`); toggles from Receive landing to Reflect after CTA.
 - **`app/(locked)/index.tsx`** — passes **`onUnlocked`** into Today / Reflect for route replace after first valid submit (see Receive doc integration table).
-- **`state/ReflectionResponsesContext.tsx`** — in-memory responses (not persisted).
+- **`lib/reflections.ts`** — Supabase persistence (`saveReflection`, `getTodaysCommunity`).
 - **`components/community/CommunityReflectionCard.tsx`** — default-imports **`CardShell`** from **`../today/reflect/parts/CardShell`** so Community does not pull **`Reflect.tsx`** through the barrel (keeps chunks and init order predictable).
 
 ---
@@ -84,7 +84,7 @@ Update **`reflectionPromptByMode`** in **`config.ts`** while keeping stable **`m
 
 | Pros | Cons / risks |
 |---|---|
-| **Thin orchestrator** — `Reflect.tsx` stays small and readable. | **In-memory only** — responses lost on reload (see `PROJECT_STATE.md`). |
+| **Thin orchestrator** — `Reflect.tsx` stays small and readable. | **Supabase dependency** — failed save blocks unlock until retry succeeds. |
 | **`parts/`** mirrors Receive’s presentational split. | **Duplicated mode→animation map** in `FocusView` (`variantForMode`) must stay aligned if you add lenses in `config`. |
 | **`CardShell`** reused in Community for visual consistency. | **Cross-import path:** Community imports **`parts/CardShell`** directly so the **`reflect`** barrel does not pull **`Reflect`** into unrelated routes. |
 
@@ -95,7 +95,7 @@ Update **`reflectionPromptByMode`** in **`config.ts`** while keeping stable **`m
 | Goal | Where to change |
 |---|---|
 | New lens | Extend `REFLECTION_LENSES` + `reflectionPromptByMode` in `config.ts`; add `variantForMode` branch in `parts/FocusView.tsx` if you want a distinct entrance. |
-| Persist responses | Introduce storage or API in **`ReflectionResponsesContext`** (or a service it calls)—keep **`Reflect`** submit contract the same. |
+| Persist responses | Already via **`lib/reflections.ts`** / Supabase; adjust schema or RLS in Supabase dashboard. |
 | Different unlock rule | Adjust **`Reflect.tsx`** only; do not scatter `unlockMainTabs` into `parts/*`. |
 | Community card chrome diverges | Fork shell or pass variants from **`CardShell`** props—coordinate with Reflect cards. |
 
@@ -104,8 +104,8 @@ Update **`reflectionPromptByMode`** in **`config.ts`** while keeping stable **`m
 ## Review checklist (PRs touching Reflect)
 
 - [ ] View lifecycle table above still matches **`Reflect.tsx`** + **`parts/FocusView.tsx`**.
-- [ ] First successful submit still calls **`unlockMainTabs`** at most once per successful **`addResponse(true)`** path.
-- [ ] `parts/*` files do not import **`TabAccessContext`** or **`ReflectionResponsesContext`**.
+- [ ] First successful submit still calls **`unlockMainTabs`** only after **`saveReflection`** succeeds.
+- [ ] `parts/*` files do not import **`TabAccessContext`** or **`lib/reflections`** directly.
 - [ ] If **`config.ts`** lens list changed: run `npx tsc --noEmit` and smoke **locked Today** through Receive → Reflect → tabs.
 
 ---

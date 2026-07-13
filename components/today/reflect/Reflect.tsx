@@ -1,8 +1,8 @@
 import { useCallback, useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { saveReflection } from "../../../lib/reflections";
 import { colors, layout, screen, spacing, textSize, textStyles } from "../../../constants";
-import { useReflectionResponses } from "../../../state/ReflectionResponsesContext";
 import { useTabAccess } from "../../../state/TabAccessContext";
 import { reflectionChoices, type ReflectionChoice } from "./config";
 import ReflectCardStack from "./parts/ReflectCardStack";
@@ -10,25 +10,74 @@ import FocusView from "./parts/FocusView";
 
 type ReflectProps = { onUnlocked?: () => void };
 
+function getSaveErrorMessage(error: unknown): string {
+  if (error instanceof Error) {
+    return error.message;
+  }
+  if (typeof error === "object" && error !== null && "message" in error) {
+    return String((error as { message: unknown }).message);
+  }
+  return "Could not save reflection. Please try again.";
+}
+
 export default function Reflect({ onUnlocked }: ReflectProps) {
   const insets = useSafeAreaInsets();
-  const { addResponse } = useReflectionResponses();
   const { unlockMainTabs, mainTabsUnlocked } = useTabAccess();
   const handleUnlocked = useCallback(() => onUnlocked?.(), [onUnlocked]);
   const [focusedChoice, setFocusedChoice] = useState<ReflectionChoice | null>(null);
   const [stackIndex, setStackIndex] = useState(0);
   const [focusBackNonce, setFocusBackNonce] = useState(0);
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
   const bottomPad = layout.screenScrollBottomPadding + (!mainTabsUnlocked ? insets.bottom : 0);
 
   const handleSelectChoice = useCallback((choice: ReflectionChoice, index: number) => {
     setStackIndex(index);
     setFocusedChoice(choice);
     setFocusBackNonce(0);
+    setSaveError(null);
   }, []);
 
   const handleFocusBack = useCallback(() => {
     setFocusedChoice(null);
+    setSaveError(null);
   }, []);
+
+  const handleSubmitResponse = useCallback(
+    async ({
+      prompt,
+      response,
+      visibility,
+    }: {
+      mode: string;
+      prompt: string;
+      response: string;
+      visibility: "public" | "private";
+    }) => {
+      if (!focusedChoice || isSaving) return;
+
+      setIsSaving(true);
+      setSaveError(null);
+
+      try {
+        await saveReflection({
+          cardType: focusedChoice.type,
+          question: prompt,
+          response,
+          isPublic: visibility === "public",
+        });
+
+        setFocusedChoice(null);
+        unlockMainTabs();
+        handleUnlocked();
+      } catch (error) {
+        setSaveError(getSaveErrorMessage(error));
+      } finally {
+        setIsSaving(false);
+      }
+    },
+    [focusedChoice, handleUnlocked, isSaving, unlockMainTabs],
+  );
 
   return (
     <View
@@ -59,19 +108,19 @@ export default function Reflect({ onUnlocked }: ReflectProps) {
           </Pressable>
         ) : null}
       </View>
+      {saveError ? (
+        <Text style={[textStyles.caption, styles.saveError]} accessibilityRole="alert">
+          {saveError}
+        </Text>
+      ) : null}
       <View style={styles.body}>
         {focusedChoice ? (
           <FocusView
             choice={focusedChoice}
             backNonce={focusBackNonce}
+            isSubmitting={isSaving}
             onBack={handleFocusBack}
-            onSubmitResponse={({ mode, prompt, response }) => {
-              if (addResponse({ mode, prompt, response })) {
-                setFocusedChoice(null);
-                unlockMainTabs();
-                handleUnlocked();
-              }
-            }}
+            onSubmitResponse={handleSubmitResponse}
           />
         ) : (
           <ReflectCardStack
@@ -103,5 +152,9 @@ const styles = StyleSheet.create({
   backPressed: { opacity: 0.7 },
   backChevron: { color: colors.primary },
   backLabel: { color: colors.primary },
+  saveError: {
+    color: colors.text,
+    marginBottom: spacing.sm,
+  },
   body: { flex: 1, width: "100%", minHeight: 0 },
 });

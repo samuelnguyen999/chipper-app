@@ -1,32 +1,23 @@
-const REFLECTION_LENSES = [
-  {
-    mode: "Release",
-    purpose:
-      "Create space to unload thoughts, emotions, and emotional weight.",
-  },
-  {
-    mode: "Understand",
-    purpose: "Bring clarity to what’s being felt, needed, or experienced internally.",
-  },
-  {
-    mode: "Move",
-    purpose:
-      "Reconnect with intention, direction, and meaningful next steps.",
-  },
-] as const;
+import { getDailyContent } from "../dailyContent";
+import type { TodayQuestion } from "./questions";
 
-export const reflectionPromptByMode = {
-  Release: "Where am I right now?",
-  Understand: "What’s going on?",
-  Move: "What do I do with this?",
+const purposeByType = {
+  ground: "Anchor in what held you steady today.",
+  understand: "Name what became clear through today.",
+  align: "Choose one step that matches who you're becoming.",
 } as const;
 
-export const reflectionChoices = REFLECTION_LENSES.map((lens) => ({
-  ...lens,
-  prompt: reflectionPromptByMode[lens.mode],
+const dailyQuestions = getDailyContent().questions;
+
+export const reflectionChoices = dailyQuestions.map((item) => ({
+  type: item.type,
+  mode: item.type.toUpperCase(),
+  purpose: purposeByType[item.type],
+  prompt: item.question,
 })) as readonly {
-  mode: (typeof REFLECTION_LENSES)[number]["mode"];
-  purpose: (typeof REFLECTION_LENSES)[number]["purpose"];
+  type: TodayQuestion["type"];
+  mode: string;
+  purpose: string;
   prompt: string;
 }[];
 

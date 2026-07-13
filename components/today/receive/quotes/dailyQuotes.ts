@@ -1,8 +1,10 @@
 /**
- * Daily receive quote: one category per weekday (local), then rotation within that pool.
+ * Daily receive quote pools keyed by {@link DailyTheme}.
+ * Theme selection lives in `../../dailyContent.ts`; this module only resolves quotes.
  * Lane pools: sibling `*.ts` files in this folder.
  */
 
+import type { DailyTheme } from "../../dailyContent";
 import { actionQuotes } from "./action";
 import { connectionQuotes } from "./connection";
 import { disciplineQuotes } from "./discipline";
@@ -11,27 +13,14 @@ import { identityQuotes } from "./identity";
 import { mindsetQuotes } from "./mindset";
 import { resilienceQuotes } from "./resilience";
 
-/** `getDay()` 0 = Sunday … 6 = Saturday */
-export const WEEKDAY_TO_CATEGORY = [
-  "action",
-  "identity",
-  "discipline",
-  "mindset",
-  "resilience",
-  "connection",
-  "faith",
-] as const;
-
-export type QuoteCategory = (typeof WEEKDAY_TO_CATEGORY)[number];
-
-export const DAILY_QUOTES: Record<QuoteCategory, readonly string[]> = {
-  faith: faithQuotes,
+export const DAILY_QUOTES: Record<DailyTheme, readonly string[]> = {
   action: actionQuotes,
+  identity: identityQuotes,
   discipline: disciplineQuotes,
   mindset: mindsetQuotes,
-  identity: identityQuotes,
   resilience: resilienceQuotes,
   connection: connectionQuotes,
+  faith: faithQuotes,
 };
 
 const FALLBACK_QUOTE = "Stay grounded. Move with purpose.";
@@ -41,17 +30,8 @@ function localDayOfYearIndex(date = new Date()): number {
   return Math.floor((date.getTime() - start.getTime()) / 86_400_000);
 }
 
-export function getQuotesForCategory(category: QuoteCategory): readonly string[] {
-  return DAILY_QUOTES[category];
-}
-
-export function getCategoryForWeekday(date = new Date()): QuoteCategory {
-  return WEEKDAY_TO_CATEGORY[date.getDay()];
-}
-
-export function getDailyReceiveQuote(date = new Date()): string {
-  const category = getCategoryForWeekday(date);
-  const list = DAILY_QUOTES[category];
+export function getQuoteForTheme(theme: DailyTheme, date = new Date()): string {
+  const list = DAILY_QUOTES[theme];
   if (list.length === 0) {
     return FALLBACK_QUOTE;
   }

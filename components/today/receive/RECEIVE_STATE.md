@@ -13,7 +13,8 @@
 | Copy + timing | `config.ts` | `receiveCopy` (static strings + **daily quote**), `receiveTiming` (ms durations). |
 | Phase machine | `flow.ts` | `LandingPhase`, `useLandingFlow` — timers, `ponderProgress`, `completeHeadingSlide`. |
 | UI orchestration | `landing.tsx` | Reanimated heading path, quote fade, layout measurement; **calls** `completeHeadingSlide` when slide ends. |
-| Quote data | `quotes/dailyQuotes.ts` | Weekday → lane; `getDailyReceiveQuote`; aggregates `quotes/*.ts` pools. |
+| Daily resolver | `../dailyContent.ts` | `DailyTheme`, `WEEKDAY_TO_THEME`, `getDailyTheme`, `getDailyReceiveQuote`, `getDailyContent`. |
+| Quote data | `quotes/dailyQuotes.ts` | Quote pools keyed by `DailyTheme`; `getQuoteForTheme(theme, date)`. |
 | Quote pools | `quotes/<lane>.ts` | One `readonly string[]` per lane (edit here for content). |
 | Atoms | `parts/*` | Presentational only — no phase logic. |
 | Public API | `index.ts` | Barrel; keeps **`useReceiveLandingFlow`** / **`ReceiveLandingPhase`** as aliases for older imports. |
@@ -34,11 +35,11 @@
 
 ---
 
-## Daily quotes (weekday lanes)
+## Daily quotes (weekday themes)
 
-**Rule:** Local **`Date.getDay()`** picks the **lane**; **day-of-year** picks the **index** inside that lane’s pool (`% pool.length`).
+**Rule:** Local **`Date.getDay()`** picks the **theme** via `getDailyTheme(date)` in `dailyContent.ts`; **day-of-year** picks the **index** inside that theme’s pool (`% pool.length`) in `getQuoteForTheme`.
 
-| Weekday (local) | Lane |
+| Weekday (local) | `DailyTheme` |
 |---|---|
 | Sunday | `action` |
 | Monday | `identity` |
@@ -49,7 +50,7 @@
 | Saturday | `faith` |
 
 - **Edit copy:** `quotes/<lane>.ts`
-- **Edit weekday mapping:** `quotes/dailyQuotes.ts` → `WEEKDAY_TO_CATEGORY`
+- **Edit weekday mapping:** `../dailyContent.ts` → `WEEKDAY_TO_THEME` / `getDailyTheme`
 
 ---
 
@@ -57,6 +58,7 @@
 
 - **`components/today/TodayExperience.tsx`** — default-imports `./receive` (i.e. `Landing`). Toggles Reflect after CTA.
 - **`components/today/TodayRecap.tsx`** — imports `receiveCopy` + `ReceiveQuote`; recap shows **same** `receiveCopy.quote` string as Receive (see limitation below).
+- **`components/today/dailyContent.ts`** — central resolver for theme, quote, and reflection questions (Reflect consumes questions via `reflect/config.ts`).
 - **`constants`** — `layout.receiveLandingPaddingTop`, `layout.tabBarDock*`, `screen.*` shared with tab dock styling in `parts/PonderCtaSlot`.
 
 ---
@@ -66,8 +68,8 @@
 | Pros | Cons / risks |
 |---|---|
 | **Clear split:** `flow` vs `landing` is easy to reason about and test mentally. | **Phase ↔ animation coupling:** If `completeHeadingSlide` is never called (Reanimated bug / early unmount), user can stall in `heading_sliding`. |
-| **Typed quote pools** — categories, no giant `.txt`, IDE refactors and reviews work well. | **All lanes load in one graph** — every `quotes/*.ts` is imported from `dailyQuotes.ts`; huge corpuses slow parse/typecheck (mitigation: split into subfolders + lazy `import()` later if needed). |
-| **Weekday lanes** give predictable “theme of the day” without extra UI. | **Locale / TZ:** Uses device **local** calendar; travelers crossing midnight or DST edges get edge cases; no per-user timezone override. |
+| **Typed quote pools** — themes, no giant `.txt`, IDE refactors and reviews work well. | **All lanes load in one graph** — every `quotes/*.ts` is imported from `dailyQuotes.ts`; huge corpuses slow parse/typecheck (mitigation: split into subfolders + lazy `import()` later if needed). |
+| **Weekday themes** give predictable “theme of the day” without extra UI. | **Locale / TZ:** Uses device **local** calendar; travelers crossing midnight or DST edges get edge cases; no per-user timezone override. |
 | **Dock (`PonderCtaSlot`)** matches tab bar height math for visual continuity. | **Dock + safe area** is sensitive; changing `layout.tabBarDock*` affects Receive and tabs—coordinate changes. |
 | **Barrel aliases** reduce churn for older `useReceiveLandingFlow` imports. | Aliases add two names for the same hook/type—prefer `useLandingFlow` / `LandingPhase` in new code. |
 
@@ -88,8 +90,8 @@
 |---|---|
 | New phase (e.g. `video_intro`) | Add to `LandingPhase` in `flow.ts`; add `useEffect` + branch in `landing.tsx`; document transition table here. |
 | Faster/slower hero / ponder | `config.ts` → `receiveTiming` only. |
-| New quote lane | Add `quotes/<lane>.ts`, import in `quotes/dailyQuotes.ts`, extend `QuoteCategory` / `WEEKDAY_TO_CATEGORY` / `DAILY_QUOTES` / `QUOTE_CATEGORY_ORDER`. |
-| Per-user quote (saved preference) | Introduce a thin resolver in `config` or `quotes/dailyQuotes.ts` that reads context/storage **before** falling back to weekday logic; keep pools in `quotes/*.ts`. |
+| New quote lane | Add `quotes/<lane>.ts`, import in `quotes/dailyQuotes.ts`, extend `DailyTheme` / `WEEKDAY_TO_THEME` / `DAILY_QUOTES`. |
+| Per-user quote (saved preference) | Introduce a thin resolver in `config` or `dailyContent.ts` that reads context/storage **before** falling back to weekday logic; keep pools in `quotes/*.ts`. |
 | Lazy-loaded huge corpus | Replace eager imports in `dailyQuotes.ts` with `import()` + async state in a provider **only if** bundle size or startup becomes an issue—otherwise keep simple. |
 | Remove legacy aliases | `index.ts` — drop `useReceiveLandingFlow` / `ReceiveLandingPhase` re-exports after grep confirms no callers. |
 
@@ -102,7 +104,7 @@
 - [ ] `pondering` effect cleans up `requestAnimationFrame` on unmount / phase change.
 - [ ] Quote edits: valid TS strings, no duplicate entries **unless intentional**; run `npx tsc --noEmit`.
 - [ ] If `layout` / dock constants changed: smoke **Receive dock** + **tab bar** on a notched device.
-- [ ] If `WEEKDAY_TO_CATEGORY` changed: confirm product intent for Sun→Sat mapping.
+- [ ] If `WEEKDAY_TO_THEME` changed: confirm product intent for Sun→Sat mapping.
 - [ ] If `receiveCopy.quote` behavior changed: verify **locked Today** and **Today recap** still match product expectations.
 
 ---
@@ -116,7 +118,8 @@
 | Motion / layout | `landing.tsx` (+ `parts/*` if presentational) |
 | Phase logic | `flow.ts` |
 | Quote line content | `quotes/<lane>.ts` |
-| Which day = which lane | `quotes/dailyQuotes.ts` → `WEEKDAY_TO_CATEGORY` |
+| Which day = which theme | `../dailyContent.ts` → `WEEKDAY_TO_THEME` / `getDailyTheme` |
+| Quote selection for a theme | `quotes/dailyQuotes.ts` → `getQuoteForTheme` |
 
 ---
 

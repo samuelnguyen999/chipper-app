@@ -9,7 +9,7 @@
 | Area | State |
 |------|--------|
 | Anonymous auth | **Done** — sign-in on cold start, session in AsyncStorage |
-| Reflection sync | **Not started** — `ReflectionResponsesContext` still in-memory only |
+| Reflection sync | **Done** — `lib/reflections.ts`; Supabase `reflections` table is the source of truth |
 | Database tables | **Not started** — no app tables wired yet |
 
 ---
@@ -78,7 +78,7 @@ In `__DEV__`, Metro logs `Anonymous user: <uuid>`.
 
 1. Create `reflections` (or similar) table with RLS: `auth.uid() = user_id`
 2. On reflect submit, `insert` row keyed to `supabase.auth.getUser()` id
-3. Hydrate Community tab from Supabase instead of (or in addition to) `ReflectionResponsesContext`
+3. Community tab reads today's public reflections via `getTodaysCommunity()` (`lib/reflections.ts`)
 4. Optional: link anonymous user to email/OAuth later via `updateUser` / `linkIdentity`
 
 ---

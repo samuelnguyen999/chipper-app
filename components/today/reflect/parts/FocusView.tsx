@@ -40,8 +40,14 @@ type FocusViewProps = {
   choice: FocusChoice;
   /** Increment from parent to run shrink-out then {@link FocusViewProps.onBack}. */
   backNonce?: number;
+  isSubmitting?: boolean;
   onBack: () => void;
-  onSubmitResponse: (input: { mode: string; prompt: string; response: string }) => void;
+  onSubmitResponse: (input: {
+    mode: string;
+    prompt: string;
+    response: string;
+    visibility: ReflectionVisibility;
+  }) => void;
 };
 
 const GROW_MS = 2000;
@@ -114,6 +120,7 @@ function VisibilityToggle({
 export default function FocusView({
   choice,
   backNonce = 0,
+  isSubmitting = false,
   onBack,
   onSubmitResponse,
 }: FocusViewProps) {
@@ -125,7 +132,7 @@ export default function FocusView({
   const isExitingRef = useRef(false);
   const inputRef = useRef<TextInputType>(null);
 
-  const canSubmit = response.trim().length > 0;
+  const canSubmit = response.trim().length > 0 && !isSubmitting;
 
   const dismissKeyboard = useCallback(() => {
     inputRef.current?.blur();
@@ -134,11 +141,10 @@ export default function FocusView({
 
   const handleSubmit = useCallback(() => {
     const trimmed = response.trim();
-    if (!trimmed) return;
+    if (!trimmed || isSubmitting) return;
     dismissKeyboard();
-    onSubmitResponse({ mode, prompt, response: trimmed });
-    setResponse("");
-  }, [dismissKeyboard, mode, onSubmitResponse, prompt, response]);
+    onSubmitResponse({ mode, prompt, response: trimmed, visibility });
+  }, [dismissKeyboard, isSubmitting, mode, onSubmitResponse, prompt, response, visibility]);
 
   const animW = useSharedValue(cardWidth);
   const animH = useSharedValue(cardHeight);
@@ -276,7 +282,7 @@ export default function FocusView({
             ]}
           >
             <Text style={[textStyles.buttonLabel, styles.submitLabel, !canSubmit && styles.submitLabelDisabled]}>
-              Submit
+              {isSubmitting ? "Saving…" : "Submit"}
             </Text>
           </Pressable>
         </View>

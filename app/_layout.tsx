@@ -7,7 +7,6 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { FontPresetProvider } from "../components/profile/FontPresetContext";
 import { getAllFontLoadMap } from "../constants/fonts";
 import { useAnonymousAuth } from "../hooks/useAnonymousAuth";
-import { ReflectionResponsesProvider } from "../state/ReflectionResponsesContext";
 import { TabAccessProvider } from "../state/TabAccessContext";
 
 SplashScreen.preventAutoHideAsync();
@@ -29,39 +28,37 @@ export default function RootLayout() {
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <ReflectionResponsesProvider>
-        <TabAccessProvider>
-          <FontPresetProvider>
-            <StatusBar style="light" />
-            <Stack>
-              <Stack.Screen
-                name="index"
-                options={{
-                  headerShown: false,
-                }}
-              />
-              <Stack.Screen
-                name="(locked)"
-                options={{
-                  headerShown: false,
-                }}
-              />
-              <Stack.Screen
-                name="(tabs)"
-                options={{
-                  headerShown: false,
-                }}
-              />
-              <Stack.Screen
-                name="+not-found"
-                options={{
-                  headerTitle: "Not Found",
-                }}
-              />
-            </Stack>
-          </FontPresetProvider>
-        </TabAccessProvider>
-      </ReflectionResponsesProvider>
+      <TabAccessProvider>
+        <FontPresetProvider>
+          <StatusBar style="light" />
+          <Stack>
+            <Stack.Screen
+              name="index"
+              options={{
+                headerShown: false,
+              }}
+            />
+            <Stack.Screen
+              name="(locked)"
+              options={{
+                headerShown: false,
+              }}
+            />
+            <Stack.Screen
+              name="(tabs)"
+              options={{
+                headerShown: false,
+              }}
+            />
+            <Stack.Screen
+              name="+not-found"
+              options={{
+                headerTitle: "Not Found",
+              }}
+            />
+          </Stack>
+        </FontPresetProvider>
+      </TabAccessProvider>
     </GestureHandlerRootView>
   );
 }

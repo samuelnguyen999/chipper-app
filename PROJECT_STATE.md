@@ -44,7 +44,7 @@
 
 | Path | Responsibility |
 |---|---|
-| `app/_layout.tsx` | Root `Stack`; `useAnonymousAuth` + fonts gate splash; wraps `ReflectionResponsesProvider`, `TabAccessProvider`, `FontPresetProvider`. |
+| `app/_layout.tsx` | Root `Stack`; `useAnonymousAuth` + fonts gate splash; wraps `TabAccessProvider`, `FontPresetProvider`. |
 | `app/index.tsx` | Startup gate; redirects to `/(locked)` or `/(tabs)` after tab-access hydration. |
 
 ### 2) Route groups by app phase

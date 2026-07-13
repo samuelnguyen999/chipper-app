@@ -1,4 +1,4 @@
-import { getDailyReceiveQuote } from "./quotes/dailyQuotes";
+import { getDailyReceiveQuote } from "../dailyContent";
 
 /**
  * Receive landing — copy, timing, and tuning.
