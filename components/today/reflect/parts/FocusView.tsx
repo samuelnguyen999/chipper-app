@@ -25,8 +25,12 @@ import {
   textSize,
   textStyles,
 } from "../../../../constants";
-import CardShell from "./CardShell";
+import CardShell from "../../../cards/CardShell";
 import { useReflectCardFrame } from "./ReflectCardStack";
+import {
+  getReflectionVisibilityPreference,
+  setReflectionVisibilityPreference,
+} from "../../../../lib/reflectionPreferences";
 
 export type FocusChoice = {
   mode: string;
@@ -47,7 +51,7 @@ type FocusViewProps = {
     prompt: string;
     response: string;
     visibility: ReflectionVisibility;
-  }) => void;
+  }) => void | Promise<void>;
 };
 
 const GROW_MS = 2000;
@@ -78,10 +82,10 @@ function VisibilityToggle({
   onChange: (value: ReflectionVisibility) => void;
 }) {
   const isPrivate = value === "private";
-  const thumbX = useSharedValue(0);
+  const thumbX = useSharedValue(isPrivate ? VISIBILITY_BTN : 0);
 
   useEffect(() => {
-    thumbX.value = withTiming(isPrivate ? 0 : VISIBILITY_BTN, TOGGLE_TIMING);
+    thumbX.value = withTiming(isPrivate ? VISIBILITY_BTN : 0, TOGGLE_TIMING);
   }, [isPrivate, thumbX]);
 
   const thumbStyle = useAnimatedStyle(() => ({
@@ -100,17 +104,17 @@ function VisibilityToggle({
       <Animated.View pointerEvents="none" style={[styles.visibilityThumb, thumbStyle]} />
       <View style={styles.visibilityBtn}>
         <Ionicons
-          name="lock-closed-outline"
-          size={18}
-          color={isPrivate ? colors.onPrimary : colors.textMuted}
+          name="globe-outline"
+          size={20}
+          color={!isPrivate ? colors.onPrimary : colors.textMuted}
         />
       </View>
       <View style={styles.visibilityBtn}>
         <Ionicons
-          name="globe-outline"
-          size={20}
-          color={!isPrivate ? colors.onPrimary : colors.textMuted}
-          style={styles.visibilityGlobeIcon}
+          name="lock-closed-outline"
+          size={18}
+          color={isPrivate ? colors.onPrimary : colors.textMuted}
+          style={styles.visibilityLockIcon}
         />
       </View>
     </Pressable>
@@ -127,10 +131,11 @@ export default function FocusView({
   const { mode, prompt } = choice;
   const { width: cardWidth, height: cardHeight } = useReflectCardFrame();
   const [response, setResponse] = useState("");
-  const [visibility, setVisibility] = useState<ReflectionVisibility>("private");
+  const [visibility, setVisibility] = useState<ReflectionVisibility>("public");
   const [slotSize, setSlotSize] = useState({ width: 0, height: 0 });
   const isExitingRef = useRef(false);
   const inputRef = useRef<TextInputType>(null);
+  const preferredVisibilityRef = useRef<ReflectionVisibility>("public");
 
   const canSubmit = response.trim().length > 0 && !isSubmitting;
 
@@ -139,11 +144,17 @@ export default function FocusView({
     Keyboard.dismiss();
   }, []);
 
-  const handleSubmit = useCallback(() => {
+  const handleSubmit = useCallback(async () => {
     const trimmed = response.trim();
     if (!trimmed || isSubmitting) return;
     dismissKeyboard();
-    onSubmitResponse({ mode, prompt, response: trimmed, visibility });
+    try {
+      await onSubmitResponse({ mode, prompt, response: trimmed, visibility });
+      preferredVisibilityRef.current = visibility;
+      await setReflectionVisibilityPreference(visibility);
+    } catch {
+      // Parent owns error UI; do not persist preference on failed save.
+    }
   }, [dismissKeyboard, isSubmitting, mode, onSubmitResponse, prompt, response, visibility]);
 
   const animW = useSharedValue(cardWidth);
@@ -157,8 +168,22 @@ export default function FocusView({
   }, [canSubmit, toggleReveal]);
 
   useEffect(() => {
+    let cancelled = false;
+
+    void getReflectionVisibilityPreference().then((preferred) => {
+      if (cancelled) return;
+      preferredVisibilityRef.current = preferred;
+      setVisibility(preferred);
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
     setResponse("");
-    setVisibility("private");
+    setVisibility(preferredVisibilityRef.current);
   }, [mode]);
 
   useEffect(() => {
@@ -379,8 +404,8 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     zIndex: 1,
   },
-  visibilityGlobeIcon: {
-    transform: [{ translateX: -1.5 }, { translateY: 0}],
+  visibilityLockIcon: {
+    transform: [{ translateX: -1.5 }, { translateY: 0 }],
   },
   submitHit: {
     paddingVertical: spacing.sm,

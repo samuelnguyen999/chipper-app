@@ -8,7 +8,7 @@ export const disciplineQuotes = [
   "Be the type of person who does things well",
   "Build better habits, not chasing better results",
   "Results are a byproduct of your habits",
-  "Improvements are only temporary until they become part of who you are",
+  "Improvements are temporary until they become part of who you are",
   "New goals don’t deliver new results. New lifestyles do",
   "It’s okay to suck; it’s not okay to skip",
   "Be the person known to do hard things",

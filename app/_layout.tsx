@@ -51,6 +51,13 @@ export default function RootLayout() {
               }}
             />
             <Stack.Screen
+              name="journal"
+              options={{
+                headerShown: true,
+                headerTitle: "Journal",
+              }}
+            />
+            <Stack.Screen
               name="+not-found"
               options={{
                 headerTitle: "Not Found",

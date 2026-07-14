@@ -10,7 +10,7 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import Animated, { FadeInDown, FadeOutUp } from "react-native-reanimated";
 import { colors, spacing, font, scaleLineHeight, textSize } from "../../../../constants";
-import CardShell from "./CardShell";
+import CardShell from "../../../cards/CardShell";
 
 export type ChoiceCardProps = {
   mode: string;

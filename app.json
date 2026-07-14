@@ -30,8 +30,8 @@
       "expo-font"
     ],
     "extra": {
-      "appEnv": "development",
-      "devStartAt": "receive"
+      "appEnv": "production",
+      "devStartAt": "mainTabs"
     }
   }
 }

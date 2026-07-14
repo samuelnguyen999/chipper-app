@@ -72,6 +72,7 @@ export default function Reflect({ onUnlocked }: ReflectProps) {
         handleUnlocked();
       } catch (error) {
         setSaveError(getSaveErrorMessage(error));
+        throw error;
       } finally {
         setIsSaving(false);
       }

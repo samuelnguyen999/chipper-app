@@ -1,57 +1,25 @@
-import { StyleSheet, Text, View } from "react-native";
-import {
-  colors,
-  font,
-  scaleLineHeight,
-  spacing,
-  textSize,
-  textStyles,
-} from "../../constants";
-import CardShell from "../today/reflect/parts/CardShell";
+import ReflectionCard from "../cards/ReflectionCard";
+import type { ReflectionCardData } from "../cards/types";
+import type { ReflectionRow } from "../../lib/reflections";
 
 type CommunityReflectionCardProps = {
-  mode: string;
-  prompt: string;
-  response: string;
+  reflection: ReflectionRow;
+  onHold?: () => void;
 };
 
-export default function CommunityReflectionCard({
-  mode,
-  prompt,
-  response,
-}: CommunityReflectionCardProps) {
-  return (
-    <CardShell>
-      <View style={styles.leadRow}>
-        <Text style={[font("semibold"), styles.mode, textSize("body")]}>{mode}</Text>
-        <Text style={[font("regular"), styles.leadMuted, textSize("body"), { lineHeight: scaleLineHeight("body") }]}> → </Text>
-        <Text style={[font("semibold"), styles.prompt, textSize("body"), { lineHeight: scaleLineHeight("body") }]}>“{prompt}”</Text>
-      </View>
-      <Text style={[textStyles.caption, styles.responseLabel]}>Response</Text>
-      <Text style={textStyles.body}>{response}</Text>
-    </CardShell>
-  );
+function toCardData(reflection: ReflectionRow): ReflectionCardData {
+  return {
+    id: reflection.id,
+    mode: reflection.card_type.toUpperCase(),
+    prompt: reflection.question,
+    response: reflection.response,
+  };
 }
 
-const styles = StyleSheet.create({
-  leadRow: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    alignItems: "flex-start",
-    marginBottom: spacing.md,
-  },
-  mode: {
-    color: colors.accent,
-  },
-  leadMuted: {
-    color: colors.textMuted,
-  },
-  prompt: {
-    color: colors.text,
-  },
-  responseLabel: {
-    textTransform: "uppercase",
-    letterSpacing: 0.5,
-    marginBottom: spacing.xs,
-  },
-});
+/** Community adapter: ReflectionRow → ReflectionCardData → ReflectionCard. */
+export default function CommunityReflectionCard({
+  reflection,
+  onHold,
+}: CommunityReflectionCardProps) {
+  return <ReflectionCard card={toCardData(reflection)} onHold={onHold} />;
+}

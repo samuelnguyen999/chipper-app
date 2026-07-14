@@ -1,6 +1,5 @@
 import { useCallback, useState } from "react";
 import {
-  FlatList,
   Image,
   Modal,
   Pressable,
@@ -23,51 +22,44 @@ function shuffle<T>(items: readonly T[]): T[] {
   return result;
 }
 
-export default function LogoGallery() {
+type LogoGalleryProps = {
+  /** When true, omit outer horizontal/bottom padding (parent ScrollView owns insets). */
+  embedded?: boolean;
+};
+
+/** Non-scrolling logo grid for a parent ScrollView (no nested scroll). */
+export default function LogoGallery({ embedded = false }: LogoGalleryProps) {
   const { width: windowWidth } = useWindowDimensions();
   const [selected, setSelected] = useState<ProfileLogo | null>(null);
-  // Randomize logo + merch order once per mount (stable while browsing).
   const [galleryItems] = useState(() => shuffle(profileLogos));
 
-  const horizontalPad = layout.screenPadding * 2;
   const columnGap = layout.screenColumnGap;
   const tileWidth =
-    (windowWidth - horizontalPad - columnGap * (profileGalleryLayout.columns - 1)) /
+    (windowWidth - layout.screenPadding * 2 - columnGap * (profileGalleryLayout.columns - 1)) /
     profileGalleryLayout.columns;
   const tileHeight = tileWidth / profileGalleryLayout.tileAspectRatio;
 
   const closeViewer = useCallback(() => setSelected(null), []);
 
-  const renderItem = useCallback(
-    ({ item }: { item: ProfileLogo }) => (
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel={`View ${item.label}`}
-        onPress={() => setSelected(item)}
-        style={({ pressed }) => [
-          styles.tile,
-          { width: tileWidth, height: tileHeight },
-          pressed && styles.tilePressed,
-        ]}
-      >
-        <Image source={item.source} style={styles.thumbnail} resizeMode="contain" />
-      </Pressable>
-    ),
-    [tileWidth, tileHeight],
-  );
-
   return (
     <>
-      <FlatList
-        data={galleryItems}
-        keyExtractor={(item) => item.id}
-        numColumns={profileGalleryLayout.columns}
-        renderItem={renderItem}
-        style={styles.list}
-        contentContainerStyle={styles.content}
-        columnWrapperStyle={styles.row}
-        showsVerticalScrollIndicator={false}
-      />
+      <View style={[styles.grid, embedded ? styles.gridEmbedded : styles.gridStandalone]}>
+        {galleryItems.map((item) => (
+          <Pressable
+            key={item.id}
+            accessibilityRole="button"
+            accessibilityLabel={`View ${item.label}`}
+            onPress={() => setSelected(item)}
+            style={({ pressed }) => [
+              styles.tile,
+              { width: tileWidth, height: tileHeight },
+              pressed && styles.tilePressed,
+            ]}
+          >
+            <Image source={item.source} style={styles.thumbnail} resizeMode="contain" />
+          </Pressable>
+        ))}
+      </View>
 
       <Modal
         visible={selected != null}
@@ -92,18 +84,18 @@ export default function LogoGallery() {
 }
 
 const styles = StyleSheet.create({
-  list: {
-    flex: 1,
+  grid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: layout.screenColumnGap,
     width: "100%",
-    backgroundColor: colors.background,
   },
-  content: {
+  gridEmbedded: {
+    paddingBottom: 0,
+  },
+  gridStandalone: {
     paddingHorizontal: layout.screenPadding,
     paddingBottom: layout.screenScrollBottomPadding,
-  },
-  row: {
-    gap: layout.screenColumnGap,
-    marginBottom: layout.screenColumnGap,
   },
   tile: {
     backgroundColor: colors.surfaceCard,

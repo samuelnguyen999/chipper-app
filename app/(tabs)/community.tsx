@@ -72,12 +72,7 @@ export default function CommunityScreen() {
       ) : (
         <View style={styles.cards}>
           {reflections.map((entry) => (
-            <CommunityReflectionCard
-              key={entry.id}
-              mode={entry.card_type.toUpperCase()}
-              prompt={entry.question}
-              response={entry.response}
-            />
+            <CommunityReflectionCard key={entry.id} reflection={entry} />
           ))}
         </View>
       )}

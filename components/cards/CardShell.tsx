@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import { StyleSheet, View, type StyleProp, type ViewStyle } from "react-native";
-import { colors, radii, spacing } from "../../../../constants";
+import { colors, radii, spacing } from "../../constants";
 
 type CardShellProps = {
   children: ReactNode;
