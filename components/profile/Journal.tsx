@@ -1,8 +1,14 @@
 import { useCallback, useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { useFocusEffect, useRouter } from "expo-router";
+import NetInfo from "@react-native-community/netinfo";
 import { colors, layout, spacing, textStyles } from "../../constants";
 import { getMyReflections, type ReflectionRow } from "../../lib/reflections";
+import {
+  getOfflineReflections,
+  isNetworkError,
+  mergeReflectionsForJournal,
+} from "../../lib/offlineReflections";
 import JournalReflectionCard from "./JournalReflectionCard";
 
 function getLocalDateKey(now = new Date()): string {
@@ -12,15 +18,7 @@ function getLocalDateKey(now = new Date()): string {
   return `${y}-${m}-${d}`;
 }
 
-function getLoadErrorMessage(error: unknown): string {
-  if (error instanceof Error) {
-    return error.message;
-  }
-  if (typeof error === "object" && error !== null && "message" in error) {
-    return String((error as { message: unknown }).message);
-  }
-  return "Could not load journal.";
-}
+type LoadState = "pending" | "ready" | "error";
 
 type JournalProps = {
   /** Preview mode for Profile overview — today's reflection + open control. */
@@ -30,31 +28,60 @@ type JournalProps = {
 export default function Journal({ preview = false }: JournalProps) {
   const router = useRouter();
   const [reflections, setReflections] = useState<ReflectionRow[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [loadState, setLoadState] = useState<LoadState>("pending");
+  /** True when Supabase history could not be loaded (offline). Pending queue may still show. */
+  const [historyUnavailable, setHistoryUnavailable] = useState(false);
 
   useFocusEffect(
     useCallback(() => {
       let cancelled = false;
 
       async function load() {
-        setLoading(true);
-        setError(null);
+        let remote: ReflectionRow[] = [];
+        let offlineOnly = false;
+        let remoteHardFail = false;
 
         try {
-          const rows = await getMyReflections();
-          if (!cancelled) {
-            setReflections(rows);
+          remote = await getMyReflections();
+        } catch (error) {
+          let offline = isNetworkError(error);
+          if (!offline) {
+            try {
+              const net = await NetInfo.fetch();
+              offline = net.isConnected === false;
+            } catch {
+              offline = false;
+            }
           }
-        } catch (loadError) {
-          if (!cancelled) {
-            setError(getLoadErrorMessage(loadError));
-          }
-        } finally {
-          if (!cancelled) {
-            setLoading(false);
+          if (offline) {
+            offlineOnly = true;
+          } else {
+            remoteHardFail = true;
           }
         }
+
+        let pending: ReflectionRow[] = [];
+        try {
+          pending = await getOfflineReflections();
+        } catch {
+          pending = [];
+        }
+
+        if (cancelled) return;
+
+        // Offline: pending queue only (no historical cache). Online: remote + pending merge.
+        const merged = offlineOnly
+          ? mergeReflectionsForJournal([], pending)
+          : mergeReflectionsForJournal(remote, pending);
+
+        if (remoteHardFail && merged.length === 0) {
+          setLoadState((prev) => (prev === "ready" ? prev : "error"));
+          return;
+        }
+
+        setReflections(merged);
+        setHistoryUnavailable(offlineOnly);
+        setLoadState("ready");
       }
 
       void load();
@@ -64,6 +91,14 @@ export default function Journal({ preview = false }: JournalProps) {
       };
     }, []),
   );
+
+  // Preview: hide only while first loading or hard error with nothing to show.
+  if (preview && loadState === "pending") {
+    return null;
+  }
+  if (preview && loadState === "error") {
+    return null;
+  }
 
   const todayKey = getLocalDateKey();
   const todaysReflection =
@@ -75,14 +110,26 @@ export default function Journal({ preview = false }: JournalProps) {
     : reflections;
   const isEmpty = preview ? todaysReflection == null : reflections.length === 0;
 
+  /** Offline notice only on full Journal — Profile preview stays quiet. */
+  const connectMessage =
+    !preview && historyUnavailable ? (
+      <Text style={textStyles.body}>
+        No internet.{"\n\n"}Connect to view your full journal.
+      </Text>
+    ) : null;
+
   const body = (() => {
-    if (loading) {
-      return <Text style={textStyles.body}>Loading journal...</Text>;
+    if (loadState === "pending") {
+      return null;
     }
-    if (error) {
-      return <Text style={textStyles.body}>{error}</Text>;
+    if (loadState === "error") {
+      return null;
     }
+
     if (isEmpty) {
+      if (connectMessage) {
+        return connectMessage;
+      }
       if (preview) {
         return (
           <View>
@@ -102,8 +149,10 @@ export default function Journal({ preview = false }: JournalProps) {
         </View>
       );
     }
+
     return (
       <View style={styles.cards}>
+        {connectMessage}
         {visible.map((entry) => (
           <JournalReflectionCard
             key={entry.id}

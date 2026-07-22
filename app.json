@@ -31,7 +31,7 @@
     ],
     "extra": {
       "appEnv": "production",
-      "devStartAt": "mainTabs"
+      "devStartAt": "reflect"
     }
   }
 }

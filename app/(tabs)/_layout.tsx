@@ -62,7 +62,7 @@ export default function TabsLayout() {
         options={{
           title: "Community",
           tabBarIcon: ({ color }: { color: string }) => (
-            <Ionicons name="people-outline" size={22} color={color} />
+            <Ionicons name="globe-outline" size={22} color={color} />
           ),
         }}
       />

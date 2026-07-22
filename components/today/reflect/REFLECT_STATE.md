@@ -39,9 +39,12 @@
 
 On submit from **`FocusView`**, **`Reflect.tsx`** `onSubmitResponse`:
 
-1. `saveReflection({ cardType, question, response, isPublic })` via **`lib/reflections.ts`** — persists to Supabase `reflections` table.
-2. On success: `unlockMainTabs()` from **`TabAccessContext`**, then optional **`onUnlocked()`** (locked route uses this for `router.replace("/(tabs)")`).
-3. On failure: error message shown; no unlock.
+1. Online: `saveReflection({ cardType, question, response, isPublic })` via **`lib/reflections.ts`**.
+2. On success: `unlockMainTabs()` + optional **`onUnlocked()`** (`router.replace("/(tabs)")`).
+3. Offline / network failure: `addOfflineReflection()` (`lib/offlineReflections.ts`) → Alert (“Saved on this device…”) → same unlock path. See **`lib/OFFLINE_STATE.md`**.
+4. Non-network failures: error message shown; **no** unlock.
+
+Device visibility preference (public/private default) lives in **`lib/reflectionPreferences.ts`** (AsyncStorage); saved only after successful submit path (including offline queue).
 
 ---
 
@@ -49,8 +52,10 @@ On submit from **`FocusView`**, **`Reflect.tsx`** `onSubmitResponse`:
 
 | API | Behavior |
 |---|---|
-| `saveReflection(...)` | Inserts row for current user; `is_public` from visibility toggle. Supabase `reflections` table is the source of truth. |
-| `getTodaysCommunity()` | Fetches today's public reflections for Community tab. |
+| `saveReflection(...)` | Inserts row for current user; `is_public` from visibility toggle. Supabase is source of truth. |
+| `getTodaysCommunity()` | Today's public rows for Community. |
+| `getMyReflections()` | Current user history for Journal. |
+| Offline queue | Pending only — **`lib/offlineReflections.ts`** / **`OFFLINE_STATE.md`**. |
 
 ---
 
@@ -64,8 +69,9 @@ Update **`reflectionPromptByMode`** in **`config.ts`** while keeping stable **`m
 
 - **`components/today/TodayExperience.tsx`** — default-imports **`./reflect`** (`Reflect`); toggles from Receive landing to Reflect after CTA.
 - **`app/(locked)/index.tsx`** — passes **`onUnlocked`** into Today / Reflect for route replace after first valid submit (see Receive doc integration table).
-- **`lib/reflections.ts`** — Supabase persistence (`saveReflection`, `getTodaysCommunity`).
-- **`components/community/CommunityReflectionCard.tsx`** — default-imports **`CardShell`** from **`../today/reflect/parts/CardShell`** so Community does not pull **`Reflect.tsx`** through the barrel (keeps chunks and init order predictable).
+- **`lib/reflections.ts`** — Supabase persistence.
+- **`lib/offlineReflections.ts`** — offline queue + sync (network failures only).
+- **`components/cards/`** — shared **`CardShell`**, **`ReflectionCard`**, **`CardContainer`** (hold placeholder). Community/Journal use adapters; Reflect lens UI still uses **`CardShell`** directly from **`components/cards/CardShell.tsx`**.
 
 ---
 
@@ -73,10 +79,9 @@ Update **`reflectionPromptByMode`** in **`config.ts`** while keeping stable **`m
 
 | File | Role |
 |---|---|
-| `parts/CardShell.tsx` | Shared bordered surface (Reflect choices + Community cards). |
-| `parts/ChoiceCard.tsx` | Lens row: purpose toggle, animated purpose reveal, tappable prompt. |
-| `parts/FocusView.tsx` | Reanimated entrance per mode, back, input, Done → submit callback. |
-| `parts/ReflectCardStack.tsx` | Focus mode: 1–3 lens swipe stack (cyclic rest depth, linear drag z-order, outgoing handoff). Tune via **`REFLECT_TUNING.md`**. |
+| `parts/ChoiceCard.tsx` | Lens row: purpose toggle, animated purpose reveal, tappable prompt (`CardShell`). |
+| `parts/FocusView.tsx` | Reanimated entrance, visibility toggle, input, submit; loads/saves visibility preference. |
+| `parts/ReflectCardStack.tsx` | Focus mode: 1–3 lens swipe stack. Tune via **`REFLECT_TUNING.md`**. |
 
 ---
 
@@ -84,9 +89,9 @@ Update **`reflectionPromptByMode`** in **`config.ts`** while keeping stable **`m
 
 | Pros | Cons / risks |
 |---|---|
-| **Thin orchestrator** — `Reflect.tsx` stays small and readable. | **Supabase dependency** — failed save blocks unlock until retry succeeds. |
-| **`parts/`** mirrors Receive’s presentational split. | **Duplicated mode→animation map** in `FocusView` (`variantForMode`) must stay aligned if you add lenses in `config`. |
-| **`CardShell`** reused in Community for visual consistency. | **Cross-import path:** Community imports **`parts/CardShell`** directly so the **`reflect`** barrel does not pull **`Reflect`** into unrelated routes. |
+| **Thin orchestrator** — `Reflect.tsx` owns save / offline / unlock. | Non-network save errors still block unlock (intentional). |
+| **Offline unlock** — queue + sync without redesigning UI. | Queue is device-local until sync; Community stays online-only. |
+| **`parts/`** presentational; cards shared via **`components/cards/`**. | `FocusView` `variantForMode` must stay aligned with lens config. |
 
 ---
 
@@ -95,18 +100,19 @@ Update **`reflectionPromptByMode`** in **`config.ts`** while keeping stable **`m
 | Goal | Where to change |
 |---|---|
 | New lens | Extend `REFLECTION_LENSES` + `reflectionPromptByMode` in `config.ts`; add `variantForMode` branch in `parts/FocusView.tsx` if you want a distinct entrance. |
-| Persist responses | Already via **`lib/reflections.ts`** / Supabase; adjust schema or RLS in Supabase dashboard. |
+| Persist / offline | Supabase + **`lib/offlineReflections.ts`**; see **`OFFLINE_STATE.md`**. |
 | Different unlock rule | Adjust **`Reflect.tsx`** only; do not scatter `unlockMainTabs` into `parts/*`. |
-| Community card chrome diverges | Fork shell or pass variants from **`CardShell`** props—coordinate with Reflect cards. |
+| Community / Journal card chrome | Change **`components/cards/ReflectionCard.tsx`** (adapters stay thin). |
 
 ---
 
 ## Review checklist (PRs touching Reflect)
 
 - [ ] View lifecycle table above still matches **`Reflect.tsx`** + **`parts/FocusView.tsx`**.
-- [ ] First successful submit still calls **`unlockMainTabs`** only after **`saveReflection`** succeeds.
-- [ ] `parts/*` files do not import **`TabAccessContext`** or **`lib/reflections`** directly.
-- [ ] If **`config.ts`** lens list changed: run `npx tsc --noEmit` and smoke **locked Today** through Receive → Reflect → tabs.
+- [ ] Unlock runs after successful **`saveReflection`** **or** successful offline queue write.
+- [ ] Non-network errors do not unlock and do not write the offline queue.
+- [ ] `parts/*` files do not import **`TabAccessContext`** or call **`saveReflection`** directly.
+- [ ] If **`config.ts`** lens list changed: run `npx tsc --noEmit` and smoke Receive → Reflect → tabs.
 
 ---
 

@@ -1,7 +1,13 @@
 import { useCallback, useState } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Alert, Pressable, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import NetInfo from "@react-native-community/netinfo";
 import { saveReflection } from "../../../lib/reflections";
+import {
+  addOfflineReflection,
+  isNetworkError,
+} from "../../../lib/offlineReflections";
+import { supabase } from "../../../lib/supabase";
 import { colors, layout, screen, spacing, textSize, textStyles } from "../../../constants";
 import { useTabAccess } from "../../../state/TabAccessContext";
 import { reflectionChoices, type ReflectionChoice } from "./config";
@@ -9,6 +15,9 @@ import ReflectCardStack from "./parts/ReflectCardStack";
 import FocusView from "./parts/FocusView";
 
 type ReflectProps = { onUnlocked?: () => void };
+
+const OFFLINE_SAVE_MESSAGE =
+  "Saved on this device. We'll upload when you're connected.";
 
 function getSaveErrorMessage(error: unknown): string {
   if (error instanceof Error) {
@@ -18,6 +27,16 @@ function getSaveErrorMessage(error: unknown): string {
     return String((error as { message: unknown }).message);
   }
   return "Could not save reflection. Please try again.";
+}
+
+async function shouldUseOfflineQueue(error: unknown): Promise<boolean> {
+  if (isNetworkError(error)) return true;
+  try {
+    const net = await NetInfo.fetch();
+    return net.isConnected === false;
+  } catch {
+    return false;
+  }
 }
 
 export default function Reflect({ onUnlocked }: ReflectProps) {
@@ -43,6 +62,12 @@ export default function Reflect({ onUnlocked }: ReflectProps) {
     setSaveError(null);
   }, []);
 
+  const completeUnlock = useCallback(() => {
+    setFocusedChoice(null);
+    unlockMainTabs();
+    handleUnlocked();
+  }, [handleUnlocked, unlockMainTabs]);
+
   const handleSubmitResponse = useCallback(
     async ({
       prompt,
@@ -59,25 +84,49 @@ export default function Reflect({ onUnlocked }: ReflectProps) {
       setIsSaving(true);
       setSaveError(null);
 
-      try {
-        await saveReflection({
-          cardType: focusedChoice.type,
-          question: prompt,
-          response,
-          isPublic: visibility === "public",
-        });
+      const payload = {
+        cardType: focusedChoice.type,
+        question: prompt,
+        response,
+        isPublic: visibility === "public",
+      };
 
-        setFocusedChoice(null);
-        unlockMainTabs();
-        handleUnlocked();
+      const saveOfflineAndUnlock = async () => {
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
+        await addOfflineReflection(payload, session?.user?.id ?? "");
+        Alert.alert("Saved offline", OFFLINE_SAVE_MESSAGE);
+        completeUnlock();
+      };
+
+      try {
+        const net = await NetInfo.fetch();
+        if (net.isConnected === false) {
+          await saveOfflineAndUnlock();
+          return;
+        }
+
+        await saveReflection(payload);
+        completeUnlock();
       } catch (error) {
+        if (await shouldUseOfflineQueue(error)) {
+          try {
+            await saveOfflineAndUnlock();
+            return;
+          } catch (offlineError) {
+            setSaveError(getSaveErrorMessage(offlineError));
+            throw offlineError;
+          }
+        }
+
         setSaveError(getSaveErrorMessage(error));
         throw error;
       } finally {
         setIsSaving(false);
       }
     },
-    [focusedChoice, handleUnlocked, isSaving, unlockMainTabs],
+    [completeUnlock, focusedChoice, isSaving],
   );
 
   return (
@@ -137,7 +186,6 @@ export default function Reflect({ onUnlocked }: ReflectProps) {
 
 const styles = StyleSheet.create({
   header: { alignSelf: "stretch", marginBottom: layout.screenHeaderAfterMargin },
-  /** Reserved above card stack / focus — back link only when a lens is open */
   backBand: {
     minHeight: 36,
     marginBottom: spacing.sm,

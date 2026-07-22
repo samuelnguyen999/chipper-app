@@ -44,7 +44,7 @@
 
 | Path | Responsibility |
 |---|---|
-| `app/_layout.tsx` | Root `Stack`; `useAnonymousAuth` + fonts gate splash; wraps `TabAccessProvider`, `FontPresetProvider`. |
+| `app/_layout.tsx` | Root `Stack`; `useAnonymousAuth` + fonts gate splash; `OfflineReflectionSync`; wraps `TabAccessProvider`, `FontPresetProvider`. |
 | `app/index.tsx` | Startup gate; redirects to `/(locked)` or `/(tabs)` after tab-access hydration. |
 
 ### 2) Route groups by app phase
@@ -53,7 +53,7 @@
 |---|---|---|
 | `/(locked)` | Pre-unlock Today-only experience. | `app/(locked)/_layout.tsx`, `app/(locked)/index.tsx` |
 | `/(tabs)` | Post-unlock tab shell (`index`, `community`, `profile`). | `app/(tabs)/_layout.tsx`, tab screens |
-| Other app routes | Fallback and future expansion. | `app/+not-found.tsx`, `app/post/[id].tsx` (placeholder) |
+| Other app routes | Full Journal + fallbacks. | `app/journal.tsx`, `app/+not-found.tsx`, `app/post/[id].tsx` (placeholder) |
 
 ### 3) Navigation behavior and safeguards
 
@@ -68,25 +68,32 @@
 | Feature | Folder | Notes |
 |---|---|---|
 | Today (experience + recap) | `components/today/` | Hosts locked flow and post-unlock recap surface. |
-| Receive | `components/today/receive/` | `config`, `flow`, `landing`, `quotes/*`, `parts/*` — see **`RECEIVE_STATE.md`** for architecture, tradeoffs, and review checklist. |
-| Reflect | `components/today/reflect/` | `config`, `Reflect.tsx`, `parts/*` — see **`REFLECT_STATE.md`** for architecture and review checklist. |
-| Community | `components/community/` | Reads reflection responses and renders cards. |
+| Receive | `components/today/receive/` | See **`RECEIVE_STATE.md`**. |
+| Reflect | `components/today/reflect/` | See **`REFLECT_STATE.md`** (online + offline submit). |
+| Shared cards | `components/cards/` | `ReflectionCard`, `CardShell`, `CardContainer` — Community/Journal adapters. |
+| Community | `components/community/` | Today's public reflections; online-only. |
+| Profile / Journal | `components/profile/` | Overview + gallery + Journal; see **`PROFILE_STATE.md`**. |
 
 ### 5) Shared modules and config surfaces
 
 | Area | Location | Notes |
 |---|---|---|
-| UI token system | `constants/` | Shared colors, spacing/layout, typography, and scene shells via barrel exports. |
-| Supabase client + auth | `lib/supabase.ts`, `hooks/useAnonymousAuth.ts` | Env via `.env`; details in **`lib/SUPABASE_STATE.md`**. |
-| Runtime app config | `app.json`, `babel.config.js` | Linking/scheme, **`devStartAt`** dev entry (see below), Babel plugin order. |
-| Package/runtime definitions | `package.json` | Dependency versions and scripts. |
-| Static assets | `assets/` | App icons/splash/media resources. |
+| UI token system | `constants/` | Colors, spacing/layout, typography, scene shells. |
+| Supabase client + auth | `lib/supabase.ts`, `hooks/useAnonymousAuth.ts` | See **`lib/SUPABASE_STATE.md`**. |
+| Reflections (online) | `lib/reflections.ts` | `saveReflection`, `getTodaysCommunity`, `getMyReflections`. |
+| Offline queue | `lib/offlineReflections.ts`, `hooks/useOfflineReflectionSync.ts` | See **`lib/OFFLINE_STATE.md`**. |
+| Visibility preference | `lib/reflectionPreferences.ts` | Device-local public/private default for Reflect. |
+| Runtime app config | `app.json`, `babel.config.js` | Linking/scheme, **`devStartAt`**. |
+| Package/runtime definitions | `package.json` | Includes NetInfo for connectivity. |
+| Static assets | `assets/` | Icons, Logos, Merch, fonts. |
 
 ### 6) Detailed flow docs
 
-- Receive flow details: `components/today/receive/RECEIVE_STATE.md`
-- Reflect flow details: `components/today/reflect/REFLECT_STATE.md`
-- Supabase / anonymous auth: `lib/SUPABASE_STATE.md`
+- Receive: `components/today/receive/RECEIVE_STATE.md`
+- Reflect: `components/today/reflect/REFLECT_STATE.md`
+- Profile / Journal: `components/profile/PROFILE_STATE.md`
+- Supabase / auth: `lib/SUPABASE_STATE.md`
+- Offline reflections V1: `lib/OFFLINE_STATE.md`
 
 **Gotcha:** Never pass a raw `{ screenOptions: ... }` object as a child of `<Stack>`; use `Stack.Screen` children and navigator props.
 
@@ -109,58 +116,48 @@
 
 - **Pre-unlock isolation:** separate `/(locked)` route group hosts **TodayExperience** only; after first submit, `router.replace('/(tabs)')` enters full tabs.
 
-- **Reflect:** Three lenses under `components/today/reflect/` — orchestration in **`Reflect.tsx`**, presentational **`parts/ChoiceCard`**, **`parts/FocusView`** (Reanimated entrance, submit on keyboard Done), shared **`parts/CardShell`**.
+- **Reflect:** Lenses under `components/today/reflect/`; submit → Supabase or offline queue; unlock after either path.
 
-- **Community:** Lists submitted reflections via **`CommunityReflectionCard`**, reusing **`CardShell`** from **`components/today/reflect/parts/CardShell.tsx`** (direct import avoids loading **`Reflect`** when only the shell is needed).
+- **Shared cards:** `components/cards/` (`ReflectionCard` / `CardShell`); Community + Journal adapters.
 
-- **Supabase anonymous auth:** **`lib/supabase.ts`** + **`hooks/useAnonymousAuth.ts`**; root layout waits for auth before rendering; sessions persist in AsyncStorage on Expo Go.
+- **Community:** Today's public rows via `getTodaysCommunity()`; offline message; no Community cache.
 
+- **Profile / Journal:** Preview (today) + full `/journal`; merge pending offline; full Journal shows connect message when history unavailable.
 
+- **Offline V1:** `lib/offlineReflections.ts` + reconnect/startup sync — see **`lib/OFFLINE_STATE.md`**.
 
-Removed unused **`components/Receive.tsx`** and **`components/AppButton.tsx`** (nothing imported them). Use `components/today/*` feature modules and primitives from **`constants`** instead.
-
-
+- **Supabase anonymous auth:** Stale JWT recovery; sessions in AsyncStorage.
 
 ---
-
-
 
 ## Current bugs / risks
 
-
-
 | Item | Severity | Notes |
 |------|----------|--------|
-| Reflection data **not persisted** | UX | In-memory only; Supabase auth ready — table sync not wired yet. |
+| **Offline Journal has no history cache** | UX (by design V1) | Offline shows pending only; full history needs connection. |
 | **`.env` required for Supabase** | Dev | Copy `.env.example` → `.env`; restart Expo after changes. |
 | **Expo Go vs Reanimated/Worklets** | Runtime | Mismatch → TurboModule/worklets crash; align SDK / clear cache / dev build. |
-| **Deep link / URL to Community while locked** | Low | **`useRedirectWhenTabsLocked`** sends user to Today; confirm UX if you rely on that URL. |
-| **Root Stack `screenOptions` footgun** | Dev | Invalid extra children on `<Stack>` still a React pitfall if refactoring. |
+| **Deep link / URL to Community while locked** | Low | **`useRedirectWhenTabsLocked`** sends user to Today. |
+| **Root Stack `screenOptions` footgun** | Dev | Invalid extra children on `<Stack>` still a React pitfall. |
 | **No automated tests** | Process | No in-repo test runner at time of writing. |
-
-
 
 ---
 
-
-
 ## Next tasks (suggested backlog)
 
+1. **Receive landing polish** — Motion tuning; optional “returning user” skip flag.
 
+2. **Reflect / Today** — Product choice: back from Reflect to reset receive flow, or keep linear forward-only.
 
-1. **Persist reflections to Supabase** — table + RLS on `auth.uid()`; insert on reflect submit; hydrate Community.
-
-2. **Receive landing polish** — Motion tuning; optional “returning user” skip flag.
-
-3. **Reflect / Today** — Product choice: back from Reflect to reset receive flow, or keep linear forward-only.
+3. **Card hold interactions** — `CardContainer` placeholder ready; actions/sheets later.
 
 4. **Production linking / EAS** — Validate **`scheme`** with dev client builds.
 
 5. **`post/[id].tsx`** — Implement or remove.
 
-6. **Profile** — Replace placeholder content.
+6. **Lint/format CI** — ESLint + CI if the team grows.
 
-7. **Lint/format CI** — ESLint + CI if the team grows.
+7. **Offline V2** (only if needed) — see out-of-scope in **`lib/OFFLINE_STATE.md`**.
 
 
 

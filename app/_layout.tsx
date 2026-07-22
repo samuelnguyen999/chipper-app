@@ -7,9 +7,15 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { FontPresetProvider } from "../components/profile/FontPresetContext";
 import { getAllFontLoadMap } from "../constants/fonts";
 import { useAnonymousAuth } from "../hooks/useAnonymousAuth";
+import { useOfflineReflectionSync } from "../hooks/useOfflineReflectionSync";
 import { TabAccessProvider } from "../state/TabAccessContext";
 
 SplashScreen.preventAutoHideAsync();
+
+function OfflineReflectionSync() {
+  useOfflineReflectionSync();
+  return null;
+}
 
 export default function RootLayout() {
   const { loading: authLoading } = useAnonymousAuth();
@@ -30,6 +36,7 @@ export default function RootLayout() {
     <GestureHandlerRootView style={{ flex: 1 }}>
       <TabAccessProvider>
         <FontPresetProvider>
+          <OfflineReflectionSync />
           <StatusBar style="light" />
           <Stack>
             <Stack.Screen
