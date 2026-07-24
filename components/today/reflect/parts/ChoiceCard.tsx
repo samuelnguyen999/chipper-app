@@ -11,8 +11,11 @@ import { Ionicons } from "@expo/vector-icons";
 import Animated, { FadeInDown, FadeOutUp } from "react-native-reanimated";
 import { colors, spacing, font, scaleLineHeight, textSize } from "../../../../constants";
 import CardShell from "../../../cards/CardShell";
+import { lensColorForType } from "../config";
+import type { TodayQuestion } from "../questions";
 
 export type ChoiceCardProps = {
+  type: TodayQuestion["type"];
   mode: string;
   prompt: string;
   purpose: string;
@@ -24,12 +27,13 @@ export type ChoiceCardProps = {
 };
 
 /** Fixed band for purpose copy so toggling never shifts the prompt block. */
-const PURPOSE_SLOT_HEIGHT = 88;
+export const PURPOSE_SLOT_HEIGHT = 88;
 /** Slide + fade: 2× prior 400 / 320 ms for a slower, calmer feel */
 const PURPOSE_ENTER_MS = 800;
 const PURPOSE_EXIT_MS = 640;
 
 export default function ChoiceCard({
+  type,
   mode,
   prompt,
   purpose,
@@ -38,6 +42,8 @@ export default function ChoiceCard({
   onPress,
   style,
 }: ChoiceCardProps) {
+  const modeColor = lensColorForType(type);
+
   return (
     <CardShell style={[styles.shell, style]}>
       <View style={styles.cardCanvas}>
@@ -64,7 +70,9 @@ export default function ChoiceCard({
             style={({ pressed }) => [styles.infoRow, pressed && styles.pressed]}
           >
             <View style={styles.leadRow}>
-              <Text style={[font("semibold"), styles.mode, textSize("body")]}>{mode}</Text>
+              <Text style={[font("semibold"), textSize("body"), { color: modeColor }]}>
+                {mode}
+              </Text>
               <Ionicons
                 name="information-circle-outline"
                 size={18}
@@ -133,7 +141,6 @@ const styles = StyleSheet.create({
   pressed: { opacity: 0.96 },
   leadRow: { flexDirection: "row", alignItems: "center" },
   infoRow: { alignSelf: "flex-start", marginBottom: spacing.xs },
-  mode: { color: colors.accent },
   infoIcon: { marginLeft: spacing.xs, marginRight: spacing.xs },
   infoHint: { color: colors.textMuted },
   purposeSlot: {

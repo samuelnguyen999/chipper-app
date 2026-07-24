@@ -32,6 +32,7 @@ export default function ReflectionCard({ card, onHold }: ReflectionCardProps) {
 const styles = StyleSheet.create({
   prompt: {
     color: colors.text,
+    textAlign: "center",
     marginBottom: spacing.md,
   },
 });

@@ -15,6 +15,11 @@ export const colors = {
   /** Navigation accent (tabs, links) */
   accent: "#0000ff",
 
+  /** Reflect lens type labels (GROUND / UNDERSTAND / ALIGN) */
+  lensGround: "#2f6f4e",
+  lensUnderstand: "#6b3fa0",
+  lensAlign: "#d97706",
+
   /** Surfaces */
   background: "#ead699",
   tabHeader: "#69350f",

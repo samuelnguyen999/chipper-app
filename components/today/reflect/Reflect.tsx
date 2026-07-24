@@ -1,6 +1,7 @@
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Alert, Pressable, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import Animated, { useAnimatedStyle, useSharedValue, withTiming } from "react-native-reanimated";
 import NetInfo from "@react-native-community/netinfo";
 import { saveReflection } from "../../../lib/reflections";
 import {
@@ -12,7 +13,11 @@ import { colors, layout, screen, spacing, textSize, textStyles } from "../../../
 import { useTabAccess } from "../../../state/TabAccessContext";
 import { reflectionChoices, type ReflectionChoice } from "./config";
 import ReflectCardStack from "./parts/ReflectCardStack";
-import FocusView from "./parts/FocusView";
+import FocusView, {
+  FOCUS_GROW_EASING,
+  FOCUS_GROW_MS,
+  FOCUS_RESPONSE_FADE_MS,
+} from "./parts/FocusView";
 
 type ReflectProps = { onUnlocked?: () => void };
 
@@ -49,6 +54,31 @@ export default function Reflect({ onUnlocked }: ReflectProps) {
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const bottomPad = layout.screenScrollBottomPadding + (!mainTabsUnlocked ? insets.bottom : 0);
+  const backOpacity = useSharedValue(0);
+
+  useEffect(() => {
+    if (!focusedChoice) {
+      backOpacity.value = 0;
+      return;
+    }
+    backOpacity.value = 0;
+    backOpacity.value = withTiming(1, {
+      duration: FOCUS_RESPONSE_FADE_MS,
+      easing: FOCUS_GROW_EASING,
+    });
+  }, [focusedChoice, backOpacity]);
+
+  useEffect(() => {
+    if (focusBackNonce < 1 || !focusedChoice) return;
+    backOpacity.value = withTiming(0, {
+      duration: FOCUS_GROW_MS * 0.35,
+      easing: FOCUS_GROW_EASING,
+    });
+  }, [focusBackNonce, focusedChoice, backOpacity]);
+
+  const backFadeStyle = useAnimatedStyle(() => ({
+    opacity: backOpacity.value,
+  }));
 
   const handleSelectChoice = useCallback((choice: ReflectionChoice, index: number) => {
     setStackIndex(index);
@@ -146,16 +176,18 @@ export default function Reflect({ onUnlocked }: ReflectProps) {
       </View>
       <View style={styles.backBand}>
         {focusedChoice ? (
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Back to all reflection lenses"
-            onPress={() => setFocusBackNonce((n) => n + 1)}
-            hitSlop={12}
-            style={({ pressed }) => [styles.backRow, pressed && styles.backPressed]}
-          >
-            <Text style={[textSize("lg"), styles.backChevron]}>←</Text>
-            <Text style={[textStyles.buttonLabel, styles.backLabel]}>All lenses</Text>
-          </Pressable>
+          <Animated.View style={backFadeStyle}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Back to all reflection lenses"
+              onPress={() => setFocusBackNonce((n) => n + 1)}
+              hitSlop={12}
+              style={({ pressed }) => [styles.backRow, pressed && styles.backPressed]}
+            >
+              <Text style={[textSize("lg"), styles.backChevron]}>←</Text>
+              <Text style={[textStyles.buttonLabel, styles.backLabel]}>All lenses</Text>
+            </Pressable>
+          </Animated.View>
         ) : null}
       </View>
       {saveError ? (

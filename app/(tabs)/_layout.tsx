@@ -17,7 +17,7 @@ export default function TabsLayout() {
       animationEnabled: true,
       tabBarShowIcon: true,
       tabBarIndicatorStyle: { height: 0 },
-      tabBarActiveTintColor: colors.accent,
+      tabBarActiveTintColor: colors.background,
       tabBarInactiveTintColor: colors.textMuted,
       tabBarStyle: {
         backgroundColor: colors.tabHeader,

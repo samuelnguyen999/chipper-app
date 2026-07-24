@@ -453,6 +453,7 @@ function StackedChoiceCard({
       style={[StyleSheet.absoluteFillObject, animatedStyle, { justifyContent: "center", alignItems: "center" }]}
     >
       <ChoiceCard
+        type={choice.type}
         mode={choice.mode}
         prompt={choice.prompt}
         purpose={choice.purpose}
