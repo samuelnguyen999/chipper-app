@@ -3,7 +3,7 @@ import { Alert, Pressable, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Animated, { useAnimatedStyle, useSharedValue, withTiming } from "react-native-reanimated";
 import NetInfo from "@react-native-community/netinfo";
-import { saveReflection } from "../../../lib/reflections";
+import { saveReflection, isDuplicateReflectionError } from "../../../lib/reflections";
 import {
   addOfflineReflection,
   isNetworkError,
@@ -24,6 +24,10 @@ type ReflectProps = { onUnlocked?: () => void };
 const OFFLINE_SAVE_MESSAGE =
   "Saved on this device. We'll upload when you're connected.";
 
+const DUPLICATE_ALERT_TITLE = "Already reflected today";
+const DUPLICATE_ALERT_BODY =
+  "You already have a reflection for today. Continuing without saving another.";
+
 function getSaveErrorMessage(error: unknown): string {
   if (error instanceof Error) {
     return error.message;
@@ -35,6 +39,7 @@ function getSaveErrorMessage(error: unknown): string {
 }
 
 async function shouldUseOfflineQueue(error: unknown): Promise<boolean> {
+  if (isDuplicateReflectionError(error)) return false;
   if (isNetworkError(error)) return true;
   try {
     const net = await NetInfo.fetch();
@@ -98,6 +103,11 @@ export default function Reflect({ onUnlocked }: ReflectProps) {
     handleUnlocked();
   }, [handleUnlocked, unlockMainTabs]);
 
+  const completeUnlockAfterDuplicate = useCallback(() => {
+    Alert.alert(DUPLICATE_ALERT_TITLE, DUPLICATE_ALERT_BODY);
+    completeUnlock();
+  }, [completeUnlock]);
+
   const handleSubmitResponse = useCallback(
     async ({
       prompt,
@@ -133,18 +143,35 @@ export default function Reflect({ onUnlocked }: ReflectProps) {
       try {
         const net = await NetInfo.fetch();
         if (net.isConnected === false) {
-          await saveOfflineAndUnlock();
+          try {
+            await saveOfflineAndUnlock();
+          } catch (offlineError) {
+            if (isDuplicateReflectionError(offlineError)) {
+              completeUnlockAfterDuplicate();
+              return;
+            }
+            throw offlineError;
+          }
           return;
         }
 
         await saveReflection(payload);
         completeUnlock();
       } catch (error) {
+        if (isDuplicateReflectionError(error)) {
+          completeUnlockAfterDuplicate();
+          return;
+        }
+
         if (await shouldUseOfflineQueue(error)) {
           try {
             await saveOfflineAndUnlock();
             return;
           } catch (offlineError) {
+            if (isDuplicateReflectionError(offlineError)) {
+              completeUnlockAfterDuplicate();
+              return;
+            }
             setSaveError(getSaveErrorMessage(offlineError));
             throw offlineError;
           }
@@ -156,7 +183,7 @@ export default function Reflect({ onUnlocked }: ReflectProps) {
         setIsSaving(false);
       }
     },
-    [completeUnlock, focusedChoice, isSaving],
+    [completeUnlock, completeUnlockAfterDuplicate, focusedChoice, isSaving],
   );
 
   return (

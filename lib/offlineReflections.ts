@@ -1,5 +1,11 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { saveReflection, type ReflectionRow, type SaveReflectionInput } from "./reflections";
+import {
+  DuplicateReflectionError,
+  isDuplicateReflectionError,
+  saveReflection,
+  type ReflectionRow,
+  type SaveReflectionInput,
+} from "./reflections";
 
 const STORAGE_KEY = "chipper.offlineReflections";
 
@@ -37,13 +43,19 @@ export async function getOfflineReflections(): Promise<ReflectionRow[]> {
 
 /**
  * Queue a reflection for later upload.
- * Replaces any pending item for the same reflection_date (one per day).
+ * One pending item per reflection_date — a second claim for today throws
+ * DuplicateReflectionError (dev re-submit) instead of inserting another row.
  */
 export async function addOfflineReflection(
   input: SaveReflectionInput,
   userId = "",
 ): Promise<ReflectionRow> {
   const reflection_date = getLocalDateKey();
+  const queue = await readQueue();
+  if (queue.some((item) => item.reflection_date === reflection_date)) {
+    throw new DuplicateReflectionError();
+  }
+
   const created_at = new Date().toISOString();
   const row: ReflectionRow = {
     id: makeLocalId(reflection_date),
@@ -56,10 +68,7 @@ export async function addOfflineReflection(
     created_at,
   };
 
-  const queue = await readQueue();
-  const next = queue.filter((item) => item.reflection_date !== reflection_date);
-  next.push(row);
-  await writeQueue(next);
+  await writeQueue([...queue, row]);
   return row;
 }
 
@@ -70,7 +79,8 @@ export async function removeOfflineReflection(id: string): Promise<void> {
 
 /**
  * Upload queued reflections via saveReflection. Successful items are removed.
- * Failures stay queued. Silent — no UI / no throw for partial failure.
+ * Duplicate-day conflicts are treated as already synced (drop from queue).
+ * Other failures stay queued. Silent — no UI / no throw for partial failure.
  */
 export async function syncOfflineReflections(): Promise<void> {
   const queue = await readQueue();
@@ -90,7 +100,11 @@ export async function syncOfflineReflections(): Promise<void> {
         isPublic: item.is_public,
       });
       await removeOfflineReflection(item.id);
-    } catch {
+    } catch (error) {
+      if (isDuplicateReflectionError(error)) {
+        await removeOfflineReflection(item.id);
+        continue;
+      }
       // Leave item queued; try again on next sync.
     }
   }

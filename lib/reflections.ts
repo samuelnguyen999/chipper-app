@@ -18,6 +18,38 @@ export type ReflectionRow = {
   created_at: string;
 };
 
+/** Thrown / detected when today's reflection already exists (unique constraint). */
+export class DuplicateReflectionError extends Error {
+  constructor(message = "A reflection for today already exists.") {
+    super(message);
+    this.name = "DuplicateReflectionError";
+  }
+}
+
+export function isDuplicateReflectionError(error: unknown): boolean {
+  if (error instanceof DuplicateReflectionError) return true;
+  if (error == null || typeof error !== "object") return false;
+
+  const code = "code" in error ? String((error as { code: unknown }).code) : "";
+  // Postgres unique_violation
+  if (code === "23505") return true;
+
+  const message =
+    "message" in error
+      ? String((error as { message: unknown }).message).toLowerCase()
+      : "";
+  const details =
+    "details" in error
+      ? String((error as { details: unknown }).details).toLowerCase()
+      : "";
+  const combined = `${message} ${details}`;
+  return (
+    combined.includes("duplicate") ||
+    combined.includes("unique") ||
+    combined.includes("already exists")
+  );
+}
+
 function getLocalDateKey(now = new Date()): string {
   const y = now.getFullYear();
   const m = String(now.getMonth() + 1).padStart(2, "0");
@@ -56,6 +88,9 @@ export async function saveReflection({
   const { error } = await supabase.from("reflections").insert(reflectionInsert);
 
   if (error) {
+    if (isDuplicateReflectionError(error)) {
+      throw new DuplicateReflectionError();
+    }
     throw error;
   }
 
