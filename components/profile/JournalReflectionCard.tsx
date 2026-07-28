@@ -4,6 +4,7 @@ import ReflectionCard from "../cards/ReflectionCard";
 import type { ReflectionCardData } from "../cards/types";
 import { colors, spacing } from "../../constants";
 import type { ReflectionRow } from "../../lib/reflections";
+import { lensTypeFromCardType } from "../today/reflect/config";
 
 type JournalReflectionCardProps = {
   reflection: ReflectionRow;
@@ -17,8 +18,10 @@ function formatCardType(cardType: string): string {
 }
 
 function toCardData(reflection: ReflectionRow): ReflectionCardData {
+  const type = lensTypeFromCardType(reflection.card_type);
   return {
     id: reflection.id,
+    type,
     mode: formatCardType(reflection.card_type),
     prompt: reflection.question,
     response: reflection.response,

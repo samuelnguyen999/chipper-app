@@ -8,6 +8,7 @@ import Animated, {
   withTiming,
 } from "react-native-reanimated";
 import { layout, spacing } from "../../../constants";
+import Watermark from "../../ui/Watermark";
 import { isPonderHintVisible, receiveCopy, receiveTiming } from "./config";
 import { useLandingFlow } from "./flow";
 import ReceiveLandingPonderCtaSlot from "./parts/PonderCtaSlot";
@@ -88,6 +89,7 @@ export default function Landing({ onContinueToReflect }: LandingProps) {
 
   return (
     <View style={styles.root} onLayout={onContainerLayout}>
+      <Watermark surface="receive" />
       <View style={styles.mainPadded}>
         <View style={[styles.centerStage, { paddingTop: headerBandReserve }]} pointerEvents="box-none">
           <View style={styles.centerCluster} pointerEvents="box-none">
@@ -133,7 +135,7 @@ export default function Landing({ onContinueToReflect }: LandingProps) {
 
 const styles = StyleSheet.create({
   root: { flex: 1, width: "100%", paddingTop: layout.receiveLandingPaddingTop },
-  mainPadded: { flex: 1, minHeight: 0, paddingHorizontal: layout.screenPadding },
+  mainPadded: { flex: 1, minHeight: 0, paddingHorizontal: layout.screenPadding, zIndex: 1 },
   centerStage: { flex: 1, justifyContent: "center", minHeight: 0 },
   centerCluster: { gap: layout.sectionGap, alignSelf: "stretch" },
   headingLayer: {

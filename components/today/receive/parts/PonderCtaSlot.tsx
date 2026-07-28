@@ -86,7 +86,7 @@ const styles = StyleSheet.create({
   wrap: {
     width: "100%",
     alignSelf: "stretch",
-    backgroundColor: colors.tabHeader,
+    backgroundColor: colors.background,
     borderTopWidth: layout.tabBarDockBorderTop,
     borderTopColor: colors.borderSubtle,
   },
@@ -108,12 +108,13 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   layer: { ...StyleSheet.absoluteFillObject },
-  track: { width: "100%", height: "100%", backgroundColor: "rgba(0, 0, 0, 0.18)", overflow: "hidden" },
-  fill: { position: "absolute", left: 0, top: 0, bottom: 0, backgroundColor: colors.accent },
+  /** Matches page tan so the empty track reads as blank until brown fill advances. */
+  track: { width: "100%", height: "100%", backgroundColor: colors.background, overflow: "hidden" },
+  fill: { position: "absolute", left: 0, top: 0, bottom: 0, backgroundColor: colors.tabHeader },
   pressable: {
-    flex: 1, width: "100%", height: "100%", backgroundColor: colors.primary, alignItems: "center", justifyContent: "center",
+    flex: 1, width: "100%", height: "100%", backgroundColor: colors.tabHeader, alignItems: "center", justifyContent: "center",
     paddingTop: layout.tabBarDockPaddingTop, paddingBottom: layout.tabBarDockItemPaddingBottom, paddingHorizontal: layout.screenPadding,
   },
   pressablePressed: { opacity: 0.92 },
-  buttonLabelText: { color: colors.onPrimary },
+  buttonLabelText: { color: colors.background },
 });

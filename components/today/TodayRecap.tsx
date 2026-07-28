@@ -1,5 +1,6 @@
 import { StyleSheet, Text, View } from "react-native";
 import { colors, layout, screen, textStyles } from "../../constants";
+import Watermark from "../ui/Watermark";
 import { receiveCopy, ReceiveQuote } from "./receive";
 
 /**
@@ -22,11 +23,14 @@ function RecapHintSlot() {
 export default function TodayRecap() {
   return (
     <View style={styles.container}>
-      <Text style={textStyles.screenTitle}>Today</Text>
-      <View style={styles.quoteStage}>
-        <View style={styles.centerCluster}>
-          <ReceiveQuote text={receiveCopy.quote} />
-          <RecapHintSlot />
+      <Watermark surface="today" />
+      <View style={styles.content}>
+        <Text style={textStyles.screenTitle}>Today</Text>
+        <View style={styles.quoteStage}>
+          <View style={styles.centerCluster}>
+            <ReceiveQuote text={receiveCopy.quote} />
+            <RecapHintSlot />
+          </View>
         </View>
       </View>
     </View>
@@ -39,6 +43,10 @@ const styles = StyleSheet.create({
     paddingTop: layout.screenPadding,
     paddingHorizontal: layout.screenPadding,
     paddingBottom: layout.screenScrollBottomPadding,
+  },
+  content: {
+    flex: 1,
+    zIndex: 1,
   },
   quoteStage: {
     flex: 1,

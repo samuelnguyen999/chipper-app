@@ -45,7 +45,7 @@ export default function ChoiceCard({
   const modeColor = lensColorForType(type);
 
   return (
-    <CardShell style={[styles.shell, style]}>
+    <CardShell style={[styles.shell, style, { borderColor: modeColor }]}>
       <View style={styles.cardCanvas}>
         {/* Prompt at vertical center of full card; top chrome overlays with solid fill */}
         <View style={styles.promptLayer} pointerEvents="box-none">

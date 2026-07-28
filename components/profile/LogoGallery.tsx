@@ -43,22 +43,27 @@ export default function LogoGallery({ embedded = false }: LogoGalleryProps) {
 
   return (
     <>
-      <View style={[styles.grid, embedded ? styles.gridEmbedded : styles.gridStandalone]}>
-        {galleryItems.map((item) => (
-          <Pressable
-            key={item.id}
-            accessibilityRole="button"
-            accessibilityLabel={`View ${item.label}`}
-            onPress={() => setSelected(item)}
-            style={({ pressed }) => [
-              styles.tile,
-              { width: tileWidth, height: tileHeight },
-              pressed && styles.tilePressed,
-            ]}
-          >
-            <Image source={item.source} style={styles.thumbnail} resizeMode="contain" />
-          </Pressable>
-        ))}
+      <View style={[styles.section, embedded ? styles.sectionEmbedded : styles.sectionStandalone]}>
+        {embedded ? (
+          <Text style={textStyles.screenSubtitle}>Gallery</Text>
+        ) : null}
+        <View style={styles.grid}>
+          {galleryItems.map((item) => (
+            <Pressable
+              key={item.id}
+              accessibilityRole="button"
+              accessibilityLabel={`View ${item.label}`}
+              onPress={() => setSelected(item)}
+              style={({ pressed }) => [
+                styles.tile,
+                { width: tileWidth, height: tileHeight },
+                pressed && styles.tilePressed,
+              ]}
+            >
+              <Image source={item.source} style={styles.thumbnail} resizeMode="contain" />
+            </Pressable>
+          ))}
+        </View>
       </View>
 
       <Modal
@@ -84,18 +89,22 @@ export default function LogoGallery({ embedded = false }: LogoGalleryProps) {
 }
 
 const styles = StyleSheet.create({
+  section: {
+    width: "100%",
+    gap: spacing.md,
+  },
+  sectionEmbedded: {
+    paddingBottom: 0,
+  },
+  sectionStandalone: {
+    paddingHorizontal: layout.screenPadding,
+    paddingBottom: layout.screenScrollBottomPadding,
+  },
   grid: {
     flexDirection: "row",
     flexWrap: "wrap",
     gap: layout.screenColumnGap,
     width: "100%",
-  },
-  gridEmbedded: {
-    paddingBottom: 0,
-  },
-  gridStandalone: {
-    paddingHorizontal: layout.screenPadding,
-    paddingBottom: layout.screenScrollBottomPadding,
   },
   tile: {
     backgroundColor: colors.surfaceCard,

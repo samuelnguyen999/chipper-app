@@ -2,6 +2,13 @@ export { colors, type ColorName } from "./colors";
 export { spacing, radii, sizing, layout } from "./spacing";
 export { screen } from "./screen";
 export {
+  watermarkBySurface,
+  type WatermarkConfig,
+  type WatermarkFit,
+  type WatermarkLayerProps,
+  type WatermarkSurface,
+} from "./watermarks";
+export {
   DEFAULT_FONT_PRESET,
   FONT_PRESET,
   FONT_PRESET_LABELS,

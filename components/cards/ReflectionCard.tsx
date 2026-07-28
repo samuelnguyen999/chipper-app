@@ -1,5 +1,6 @@
 import { StyleSheet, Text } from "react-native";
 import { colors, font, scaleLineHeight, spacing, textSize, textStyles } from "../../constants";
+import { lensColorForType } from "../today/reflect/config";
 import CardContainer from "./CardContainer";
 import CardShell from "./CardShell";
 import type { ReflectionCardData } from "./types";
@@ -10,9 +11,11 @@ type ReflectionCardProps = {
 };
 
 export default function ReflectionCard({ card, onHold }: ReflectionCardProps) {
+  const borderColor = lensColorForType(card.type);
+
   return (
     <CardContainer onHold={onHold}>
-      <CardShell>
+      <CardShell style={{ borderColor }}>
         <Text
           style={[
             font("semibold"),

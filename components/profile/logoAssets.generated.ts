@@ -11,15 +11,17 @@ export type ProfileLogo = {
 };
 
 export const profileLogos: readonly ProfileLogo[] = [
-  { id: "logo-2-c", label: "2 - C", category: "logo", source: require("../../assets/Logos/2 - C.png") },
   { id: "logo-bevel-blue", label: "Bevel Blue", category: "logo", source: require("../../assets/Logos/Bevel Blue.png") },
   { id: "logo-bevel-chocolate", label: "Bevel Chocolate", category: "logo", source: require("../../assets/Logos/Bevel Chocolate.png") },
   { id: "logo-bevel-light", label: "Bevel Light", category: "logo", source: require("../../assets/Logos/Bevel Light.png") },
   { id: "logo-blackred", label: "blackRed", category: "logo", source: require("../../assets/Logos/blackRed.png") },
   { id: "logo-c-emblem-logo", label: "C-emblem Logo", category: "logo", source: require("../../assets/Logos/C-emblem Logo.png") },
+  { id: "logo-c", label: "C", category: "logo", source: require("../../assets/Logos/C.png") },
   { id: "logo-chocolate-emblem", label: "Chocolate Emblem", category: "logo", source: require("../../assets/Logos/Chocolate Emblem.png") },
+  { id: "logo-chrome", label: "Chrome", category: "logo", source: require("../../assets/Logos/Chrome.jpg") },
   { id: "logo-final-logo", label: "Final Logo", category: "logo", source: require("../../assets/Logos/Final Logo.png") },
   { id: "logo-flower-emblem", label: "Flower Emblem", category: "logo", source: require("../../assets/Logos/Flower Emblem.png") },
+  { id: "logo-ice", label: "Ice", category: "logo", source: require("../../assets/Logos/Ice.png") },
   { id: "logo-limited-supply-tag", label: "limited-supply-tag", category: "logo", source: require("../../assets/Logos/limited-supply-tag.png") },
   { id: "logo-plaid", label: "Plaid", category: "logo", source: require("../../assets/Logos/Plaid.png") },
   { id: "logo-rosewhite", label: "Rosewhite", category: "logo", source: require("../../assets/Logos/Rosewhite.png") },

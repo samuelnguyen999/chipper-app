@@ -315,7 +315,7 @@ export default function FocusView({
         }}
       >
         <Animated.View style={[styles.cardWrap, cardStyle]}>
-          <CardShell style={styles.card}>
+          <CardShell style={[styles.card, { borderColor: modeColor }]}>
             <View style={styles.canvas}>
               {/* Match ChoiceCard: prompt centered on full face; chrome overlays. */}
               <Animated.View

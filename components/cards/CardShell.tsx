@@ -3,7 +3,7 @@ import { StyleSheet, View, type StyleProp, type ViewStyle } from "react-native";
 import { colors, radii, spacing } from "../../constants";
 
 export const CARD_SHELL_PADDING = spacing.lg;
-export const CARD_SHELL_BORDER = 1;
+export const CARD_SHELL_BORDER = 2;
 
 /** Inner content width for a CardShell with the given outer width (border-box). */
 export function cardShellContentWidth(outerWidth: number): number {

@@ -1,0 +1,143 @@
+import { useCallback, useRef, useState, type ReactNode } from "react";
+import {
+  ScrollView,
+  StyleSheet,
+  View,
+  type NativeScrollEvent,
+  type NativeSyntheticEvent,
+  type StyleProp,
+  type ViewStyle,
+} from "react-native";
+import Animated, {
+  Easing,
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from "react-native-reanimated";
+import { colors, spacing } from "../../constants";
+
+type ScrollRailProps = {
+  children: ReactNode;
+  style?: StyleProp<ViewStyle>;
+  contentContainerStyle?: StyleProp<ViewStyle>;
+};
+
+const RAIL_WIDTH = 3;
+const THUMB_MIN = 28;
+/** Hold visible briefly after scroll ends, then fade — iOS-like. */
+const HIDE_DELAY_MS = 700;
+const FADE_IN_MS = 120;
+const FADE_OUT_MS = 700;
+const FADE_EASING = Easing.out(Easing.quad);
+
+/**
+ * ScrollView with a side rail that appears while scrolling and fades out when idle.
+ */
+export default function ScrollRail({ children, style, contentContainerStyle }: ScrollRailProps) {
+  const [viewportH, setViewportH] = useState(0);
+  const [contentH, setContentH] = useState(0);
+  const [offsetY, setOffsetY] = useState(0);
+  const hideTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const railOpacity = useSharedValue(0);
+
+  const clearHideTimer = useCallback(() => {
+    if (hideTimerRef.current != null) {
+      clearTimeout(hideTimerRef.current);
+      hideTimerRef.current = null;
+    }
+  }, []);
+
+  const showRailIndicator = useCallback(() => {
+    clearHideTimer();
+    railOpacity.value = withTiming(1, { duration: FADE_IN_MS, easing: FADE_EASING });
+  }, [clearHideTimer, railOpacity]);
+
+  const scheduleHideRail = useCallback(() => {
+    clearHideTimer();
+    hideTimerRef.current = setTimeout(() => {
+      hideTimerRef.current = null;
+      railOpacity.value = withTiming(0, { duration: FADE_OUT_MS, easing: FADE_EASING });
+    }, HIDE_DELAY_MS);
+  }, [clearHideTimer, railOpacity]);
+
+  const onScroll = useCallback(
+    (e: NativeSyntheticEvent<NativeScrollEvent>) => {
+      setOffsetY(e.nativeEvent.contentOffset.y);
+      showRailIndicator();
+    },
+    [showRailIndicator],
+  );
+
+  const onScrollBegin = useCallback(() => {
+    showRailIndicator();
+  }, [showRailIndicator]);
+
+  const onScrollEnd = useCallback(() => {
+    scheduleHideRail();
+  }, [scheduleHideRail]);
+
+  const overflow = contentH - viewportH;
+  const canScroll = overflow > 2 && viewportH > 0;
+  const railInnerH = Math.max(0, viewportH - spacing.sm * 2);
+  const thumbH = canScroll
+    ? Math.max(THUMB_MIN, (viewportH / contentH) * railInnerH)
+    : 0;
+  const travel = Math.max(0, railInnerH - thumbH);
+  const thumbTop = overflow > 0 ? (offsetY / overflow) * travel : 0;
+
+  const railFadeStyle = useAnimatedStyle(() => ({
+    opacity: railOpacity.value,
+  }));
+
+  return (
+    <View
+      style={[styles.root, style]}
+      onLayout={(e) => setViewportH(e.nativeEvent.layout.height)}
+    >
+      <ScrollView
+        style={styles.scroll}
+        contentContainerStyle={contentContainerStyle}
+        showsVerticalScrollIndicator={false}
+        scrollEventThrottle={16}
+        onScroll={onScroll}
+        onScrollBeginDrag={onScrollBegin}
+        onScrollEndDrag={onScrollEnd}
+        onMomentumScrollBegin={onScrollBegin}
+        onMomentumScrollEnd={onScrollEnd}
+        onContentSizeChange={(_w, h) => setContentH(h)}
+      >
+        {children}
+      </ScrollView>
+      {canScroll ? (
+        <Animated.View style={[styles.rail, railFadeStyle]} pointerEvents="none">
+          <View style={[styles.thumb, { height: thumbH, transform: [{ translateY: thumbTop }] }]} />
+        </Animated.View>
+      ) : null}
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  root: {
+    flex: 1,
+    position: "relative",
+  },
+  scroll: {
+    flex: 1,
+  },
+  rail: {
+    position: "absolute",
+    top: spacing.sm,
+    bottom: spacing.sm,
+    right: 2,
+    width: RAIL_WIDTH,
+    borderRadius: RAIL_WIDTH / 2,
+    backgroundColor: "rgba(105, 53, 15, 0.18)",
+    overflow: "hidden",
+  },
+  thumb: {
+    width: "100%",
+    borderRadius: RAIL_WIDTH / 2,
+    backgroundColor: colors.tabHeader,
+  },
+});

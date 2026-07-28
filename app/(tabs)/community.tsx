@@ -1,8 +1,9 @@
+import { StyleSheet, Text, View } from "react-native";
 import { useCallback, useState } from "react";
-import { ScrollView, StyleSheet, Text, View } from "react-native";
 import { useFocusEffect } from "expo-router";
 import NetInfo from "@react-native-community/netinfo";
 import CommunityReflectionCard from "../../components/community";
+import ScrollRail from "../../components/ui/ScrollRail";
 import { layout, screen, textStyles } from "../../constants";
 import { getTodaysCommunity, type ReflectionRow } from "../../lib/reflections";
 import { isNetworkError } from "../../lib/offlineReflections";
@@ -54,11 +55,7 @@ export default function CommunityScreen() {
   );
 
   return (
-    <ScrollView
-      style={styles.scroll}
-      contentContainerStyle={styles.container}
-      showsVerticalScrollIndicator={false}
-    >
+    <ScrollRail style={styles.scroll} contentContainerStyle={styles.container}>
       <Text style={textStyles.screenTitle}>Community</Text>
       {loadState === "pending" ? null : loadState === "offline" ? (
         <Text style={textStyles.body}>
@@ -77,7 +74,7 @@ export default function CommunityScreen() {
           ))}
         </View>
       )}
-    </ScrollView>
+    </ScrollRail>
   );
 }
 

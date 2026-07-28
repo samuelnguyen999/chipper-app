@@ -1,6 +1,7 @@
 import ReflectionCard from "../cards/ReflectionCard";
 import type { ReflectionCardData } from "../cards/types";
 import type { ReflectionRow } from "../../lib/reflections";
+import { lensTypeFromCardType } from "../today/reflect/config";
 
 type CommunityReflectionCardProps = {
   reflection: ReflectionRow;
@@ -8,9 +9,11 @@ type CommunityReflectionCardProps = {
 };
 
 function toCardData(reflection: ReflectionRow): ReflectionCardData {
+  const type = lensTypeFromCardType(reflection.card_type);
   return {
     id: reflection.id,
-    mode: reflection.card_type.toUpperCase(),
+    type,
+    mode: type.toUpperCase(),
     prompt: reflection.question,
     response: reflection.response,
   };

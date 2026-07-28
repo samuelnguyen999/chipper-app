@@ -19,6 +19,13 @@ export function lensColorForType(type: TodayQuestion["type"]): string {
   return lensColorByType[type];
 }
 
+/** Resolve DB / row `card_type` to a known lens; falls back to ground. */
+export function lensTypeFromCardType(cardType: string): TodayQuestion["type"] {
+  const key = cardType.trim().toLowerCase();
+  if (key === "ground" || key === "understand" || key === "align") return key;
+  return "ground";
+}
+
 const dailyQuestions = getDailyContent().questions;
 
 export const reflectionChoices = dailyQuestions.map((item) => ({
