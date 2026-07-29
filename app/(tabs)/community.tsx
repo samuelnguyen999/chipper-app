@@ -65,7 +65,7 @@ export default function CommunityScreen() {
         <Text style={textStyles.body}>Community public posts appear here.</Text>
       ) : reflections.length === 0 ? (
         <Text style={textStyles.body}>
-          Your submitted reflections will appear here as cards.
+          Daily public reflections will appear here.
         </Text>
       ) : (
         <View style={styles.cards}>

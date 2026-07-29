@@ -38,7 +38,7 @@ const CARD_WIDTH_SCREEN_FRAC = 0.82;
 const CARD_MAX_HEIGHT_SCREEN_FRAC = 0.48;
 
 /** Rest stack: Y / scale / opacity per cyclic depth (0 = front, 1, 2) */
-const PEEK_TRANSLATE_Y: [number, number, number] = [0, 5, 11];
+const PEEK_TRANSLATE_Y: [number, number, number] = [0, 7, 14];
 const PEEK_SCALE: [number, number, number] = [1, 0.985, 0.97];
 const PEEK_OPACITY: [number, number, number] = [1, 0.93, 0.88];
 

@@ -24,7 +24,7 @@ Shared values must stay **in sync on commit** (`outgoingIndexSV` then `activeIdx
 | Goal | Location |
 |------|-----------|
 | Timings, thresholds, peek offsets | **`ReflectCardStack.tsx`** → **Tuning** block (top of file) |
-| Lens copy / count | **`config.ts`** |
+| Lens copy / count | **`questions.ts`** (prompts) + **`config.ts`** (`purposeByType`, colors, `reflectionChoices`) |
 | Card chrome, purpose toggle | **`parts/ChoiceCard.tsx`** |
 | List vs focus, unlock | **`Reflect.tsx`** |
 

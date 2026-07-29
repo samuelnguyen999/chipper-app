@@ -12,7 +12,7 @@
 |---|---|---|
 | Journal list | `Journal.tsx` | Loads Supabase + pending offline; preview vs full; Open → `/journal` |
 | Journal adapter | `JournalReflectionCard.tsx` | `ReflectionRow` → `ReflectionCard`; optional visibility overlay (Profile today only) |
-| Gallery UI | `LogoGallery.tsx` | Non-scrolling flexWrap grid (parent `ScrollView` owns scroll); tap → modal |
+| Gallery UI | `LogoGallery.tsx` | Non-scrolling flexWrap grid (parent scroll owns scroll); “Gallery” subtitle when embedded; tap → modal |
 | Asset manifest | `logoAssets.generated.ts` | **Auto-generated** — static `require()` for Logos + Merch. Do not edit by hand. |
 | Asset wrapper | `logoAssets.ts` | Re-exports `profileLogos` + `ProfileLogo` type; sync workflow. |
 | Grid tuning | `config.ts` | `profileGalleryLayout` (columns, tile aspect, padding). |
@@ -36,8 +36,8 @@ app/(tabs)/profile.tsx
 
 ```
 app/journal.tsx
-  Stack header + ScrollView
-    <Journal />             // full history; offline connect message when needed
+  Stack header + ScrollRail
+    <Journal />             // full history; relative date groups; offline connect message when needed
 ```
 
 ---
@@ -47,13 +47,24 @@ app/journal.tsx
 | Mode | Data | Offline UI |
 |------|------|------------|
 | **Preview** (`preview`) | Today’s reflection only (remote or pending) | No offline banner; pending today still shows |
-| **Full** (`/journal`) | All remote + pending merge | Pending only + “Connect to view your full journal.” |
+| **Full** (`/journal`) | All remote + pending merge, grouped by recency | Pending only + “Connect to view your full journal.” |
+
+**Full-journal groups** (Sunday→Saturday weeks; headers use `textStyles.screenSubtitle`):
+
+| Group | Window |
+|-------|--------|
+| This week | Current week Sunday → today |
+| Last week | Previous Sunday → previous Saturday |
+| Last month | Older than last week, within ~30 days |
+| Last year | Older than that |
+
+Empty groups are omitted.
 
 - Supabase = sole **historical** source (no journal history cache).
 - AsyncStorage pending = `getOfflineReflections()` until sync.
-- Cards: `JournalReflectionCard` → shared `components/cards/ReflectionCard`.
+- Cards: `JournalReflectionCard` → shared `components/cards/ReflectionCard` (lens-colored border via `lensTypeFromCardType`).
 - Visibility globe/lock overlay: **preview / today’s card only**.
-
+- Full journal scroll chrome: **`components/ui/ScrollRail.tsx`** (same pattern as Community).
 ---
 
 ## Logo workflow (add / remove images)
@@ -132,7 +143,8 @@ Metro bundles images at **build time**. Use the sync script:
 | Change | File |
 |---|---|
 | Profile layout | `app/(tabs)/profile.tsx` |
-| Journal list / offline message | `Journal.tsx` |
+| Journal list / groups / offline message | `Journal.tsx` |
+| Full journal scroll rail | `app/journal.tsx` + `components/ui/ScrollRail.tsx` |
 | Card adapter / lock-globe | `JournalReflectionCard.tsx` |
 | Gallery / modal | `LogoGallery.tsx` |
 | Logo assets | `assets/*` + `npm run sync:logos` |

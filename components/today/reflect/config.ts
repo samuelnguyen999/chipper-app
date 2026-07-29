@@ -3,9 +3,9 @@ import { getDailyContent } from "../dailyContent";
 import type { TodayQuestion } from "./questions";
 
 const purposeByType = {
-  ground: "Anchor in what held you steady today.",
-  understand: "Name what became clear through today.",
-  align: "Choose one step that matches who you're becoming.",
+  ground: "Anchor yourself in the present with what supports you.",
+  understand: "Explore what is unfolding with clarity.",
+  align: "Take your next step and live aligned with who you are.",
 } as const;
 
 /** Type label colors: ground → green, understand → purple, align → orange. */

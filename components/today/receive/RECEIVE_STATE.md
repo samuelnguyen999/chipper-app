@@ -57,10 +57,10 @@
 ## Integration points (rest of app)
 
 - **`components/today/TodayExperience.tsx`** — default-imports `./receive` (i.e. `Landing`). Toggles Reflect after CTA.
-- **`components/today/TodayRecap.tsx`** — imports `receiveCopy` + `ReceiveQuote`; recap shows **same** `receiveCopy.quote` string as Receive (see limitation below).
-- **`components/today/dailyContent.ts`** — central resolver for theme, quote, and reflection questions (Reflect consumes questions via `reflect/config.ts`).
+- **`components/today/TodayRecap.tsx`** — imports `receiveCopy` + `ReceiveQuote`; recap shows **same** `receiveCopy.quote` string as Receive (see limitation below). Optional full-bleed **`Watermark`** (`surface="today"`) — see **`constants/watermarks.ts`**.
+- **`components/today/dailyContent.ts`** — central resolver for theme, quote, and reflection questions (Reflect consumes questions via `reflect/config.ts` ← `questions.ts`).
 - **`constants`** — `layout.receiveLandingPaddingTop`, `layout.tabBarDock*`, `screen.*` shared with tab dock styling in `parts/PonderCtaSlot`.
-
+- **`landing.tsx`** may host **`Watermark`** (`surface="receive"`); unused tab surfaces stay `null` in the watermark map until enabled.
 ---
 
 ## Pros / cons (current state)
