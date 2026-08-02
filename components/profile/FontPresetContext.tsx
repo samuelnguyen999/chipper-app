@@ -2,6 +2,7 @@ import {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
   useState,
   type ReactNode,
@@ -21,6 +22,12 @@ import {
   setActiveFontPreset,
   type FontPreset,
 } from "../../constants/fonts";
+import {
+  getFontPresetPreference,
+  getFontSizePresetPreference,
+  setFontPresetPreference,
+  setFontSizePresetPreference,
+} from "../../lib/fontPreferences";
 
 type FontPresetContextValue = {
   preset: FontPreset;
@@ -41,10 +48,27 @@ export function FontPresetProvider({ children }: { children: ReactNode }) {
   const [preset, setPreset] = useState<FontPreset>(() => getActiveFontPreset());
   const [sizePreset, setSizePreset] = useState<FontSizePreset>(() => getActiveFontSizePreset());
 
+  useEffect(() => {
+    let cancelled = false;
+    void Promise.all([getFontPresetPreference(), getFontSizePresetPreference()]).then(
+      ([storedFont, storedSize]) => {
+        if (cancelled) return;
+        setActiveFontPreset(storedFont);
+        setPreset(storedFont);
+        setActiveFontSizePreset(storedSize);
+        setSizePreset(storedSize);
+      },
+    );
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   const cycleFontPreset = useCallback(() => {
     setPreset((current) => {
       const next = nextFontPreset(current);
       setActiveFontPreset(next);
+      void setFontPresetPreference(next);
       return next;
     });
   }, []);
@@ -53,6 +77,7 @@ export function FontPresetProvider({ children }: { children: ReactNode }) {
     setSizePreset((current) => {
       const next = nextFontSizePreset(current);
       setActiveFontSizePreset(next);
+      void setFontSizePresetPreference(next);
       return next;
     });
   }, []);

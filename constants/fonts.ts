@@ -12,13 +12,7 @@ import type { TextStyle } from "react-native";
  *
  * `typography.ts` and `app/_layout.tsx` read this file.
  */
-export type FontPreset =
-  | "system"
-  | "perfectGirlSans"
-  | "scaver"
-  | "brownCookies"
-  | "ananda"
-  | "oldLondon";
+export type FontPreset = "system" | "firstSchool" | "chocolates" | "vinque";
 
 /** Default before Profile font cycle (or when not using the button). */
 export const DEFAULT_FONT_PRESET: FontPreset = "system";
@@ -29,20 +23,16 @@ export const FONT_PRESET = DEFAULT_FONT_PRESET;
 /** Cycle order for Profile font button — keep in sync with `FONT_REGISTRY` keys. */
 export const FONT_PRESET_ORDER: readonly FontPreset[] = [
   "system",
-  "perfectGirlSans",
-  "scaver",
-  "brownCookies",
-  "ananda",
-  "oldLondon",
+  "firstSchool",
+  "chocolates",
+  "vinque",
 ];
 
 export const FONT_PRESET_LABELS: Record<FontPreset, string> = {
   system: "System",
-  perfectGirlSans: "Perfect Girl Sans",
-  scaver: "Scaver",
-  brownCookies: "Brown Cookies",
-  ananda: "Ananda",
-  oldLondon: "Old London",
+  firstSchool: "First School",
+  chocolates: "Chocolates",
+  vinque: "Vinque",
 };
 
 type FontFamilies = {
@@ -73,27 +63,20 @@ export const FONT_REGISTRY = {
     families: { regular: "", semibold: "" },
     load: {},
   },
-  perfectGirlSans: {
-    families: { regular: "PerfectGirlSansSerif", semibold: "PerfectGirlSansSerif" },
-    load: { PerfectGirlSansSerif: require("../assets/fonts/PerfectGirl-SansSerif.otf") },
+  firstSchool: {
+    families: { regular: "FirstSchool", semibold: "FirstSchool" },
+    load: { FirstSchool: require("../assets/fonts/First School.otf") },
   },
-  scaver: {
-    families: { regular: "Scaver", semibold: "Scaver" },
-    load: { Scaver: require("../assets/fonts/Scaver-Regular.ttf") },
+  chocolates: {
+    families: { regular: "Chocolates", semibold: "ChocolatesSemiBold" },
+    load: {
+      Chocolates: require("../assets/fonts/Chocolates.otf"),
+      ChocolatesSemiBold: require("../assets/fonts/Chocolates SemiBold.otf"),
+    },
   },
-  brownCookies: {
-    families: { regular: "BrownCookies", semibold: "BrownCookies" },
-    load: { BrownCookies: require("../assets/fonts/Brown Cookies.otf") },
-  },
-  ananda: {
-    families: { regular: "Ananda", semibold: "Ananda" },
-    load: { Ananda: require("../assets/fonts/Ananda.ttf") },
-    titleLineHeightScale: 1.68,
-    titleHorizontalInsetScale: 0.14,
-  },
-  oldLondon: {
-    families: { regular: "OldLondon", semibold: "OldLondon" },
-    load: { OldLondon: require("../assets/fonts/Old London.ttf") },
+  vinque: {
+    families: { regular: "Vinque", semibold: "Vinque" },
+    load: { Vinque: require("../assets/fonts/Vinque Rg.otf") },
   },
 } as const satisfies Record<FontPreset, FontPresetConfig>;
 

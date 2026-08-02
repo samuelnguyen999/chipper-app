@@ -5,7 +5,7 @@
  * 1. Add to `FONT_SIZE_REGISTRY`, `FONT_SIZE_PRESET_ORDER`, `FONT_SIZE_PRESET_LABELS`
  * 2. Profile **Text size** row cycles automatically
  */
-export type FontSizePreset = "system" | "compact" | "large" | "extraLarge";
+export type FontSizePreset = "system" | "small" | "large";
 
 export type FontSizeToken = "sm" | "md" | "body" | "lg" | "title";
 
@@ -13,16 +13,14 @@ export const DEFAULT_FONT_SIZE_PRESET: FontSizePreset = "system";
 
 export const FONT_SIZE_PRESET_ORDER: readonly FontSizePreset[] = [
   "system",
-  "compact",
+  "small",
   "large",
-  "extraLarge",
 ];
 
 export const FONT_SIZE_PRESET_LABELS: Record<FontSizePreset, string> = {
   system: "System",
-  compact: "Compact",
+  small: "Small",
   large: "Large",
-  extraLarge: "Extra Large",
 };
 
 export const BASE_FONT_SIZE = {
@@ -39,9 +37,8 @@ export const BASE_LINE_HEIGHT = {
 
 export const FONT_SIZE_REGISTRY = {
   system: { scale: 1 },
-  compact: { scale: 0.9 },
-  large: { scale: 1.12 },
-  extraLarge: { scale: 1.42 },
+  small: { scale: 0.9 },
+  large: { scale: 1.22 },
 } as const satisfies Record<FontSizePreset, { scale: number }>;
 
 let activeFontSizePreset: FontSizePreset = DEFAULT_FONT_SIZE_PRESET;

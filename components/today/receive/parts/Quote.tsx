@@ -8,7 +8,7 @@ type ReceiveLandingQuoteProps = {
 export default function ReceiveLandingQuote({ text }: ReceiveLandingQuoteProps) {
   return (
     <View style={styles.wrap}>
-      <Text style={textStyles.bodyCenter}>“{text}”</Text>
+      <Text style={textStyles.bodyCenter}>{text}</Text>
     </View>
   );
 }

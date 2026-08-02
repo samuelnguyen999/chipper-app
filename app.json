@@ -30,8 +30,8 @@
       "expo-font"
     ],
     "extra": {
-      "appEnv": "development",
-      "devStartAt": "reflect"
+      "appEnv": "production",
+      "devStartAt": "receive"
     }
   }
 }
