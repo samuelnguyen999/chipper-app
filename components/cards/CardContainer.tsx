@@ -1,18 +1,22 @@
 import type { ReactNode } from "react";
-import { StyleSheet, View } from "react-native";
+import { Pressable, StyleSheet } from "react-native";
 
 type CardContainerProps = {
   children: ReactNode;
-  /** Placeholder for future hold interaction — unused in Phase 1. */
+  /** Semantic hold — screens/adapters supply meaning; detection stays here. */
   onHold?: () => void;
 };
 
 /**
- * Future owner of hold detection / pressed state / card actions.
- * Phase 1: passthrough wrapper only.
+ * Owner of hold detection for saved reflection cards.
+ * Translates long press → `onHold`. Does not expose `onLongPress`.
  */
-export default function CardContainer({ children }: CardContainerProps) {
-  return <View style={styles.root}>{children}</View>;
+export default function CardContainer({ children, onHold }: CardContainerProps) {
+  return (
+    <Pressable style={styles.root} onLongPress={onHold}>
+      {children}
+    </Pressable>
+  );
 }
 
 const styles = StyleSheet.create({

@@ -149,7 +149,7 @@
 
 2. **Reflect / Today** — Product choice: back from Reflect to reset receive flow, or keep linear forward-only.
 
-3. **Card hold interactions** — `CardContainer` placeholder ready; actions/sheets later.
+3. **Card hold interactions** — hold → resolve → sheet; visibility via screen `handlers` → `updateReflectionVisibility`. Edit/delete/reactions still placeholders.
 
 4. **Production linking / EAS** — Validate **`scheme`** with dev client builds.
 

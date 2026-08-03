@@ -152,3 +152,47 @@ export async function getMyReflections(): Promise<ReflectionRow[]> {
 
   return data ?? [];
 }
+
+/**
+ * Toggle `is_public` for a single reflection owned by the current user.
+ * Relies on RLS (`auth.uid() = user_id`) plus an explicit `user_id` filter.
+ */
+export async function updateReflectionVisibility(
+  reflectionId: string,
+  isPublic: boolean,
+): Promise<ReflectionRow> {
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser();
+
+  if (authError) {
+    throw authError;
+  }
+
+  if (!user) {
+    throw new Error("User not authenticated");
+  }
+
+  const { data, error } = await supabase
+    .from("reflections")
+    .update({ is_public: isPublic })
+    .eq("id", reflectionId)
+    .eq("user_id", user.id)
+    .select(
+      "id, user_id, card_type, question, response, is_public, reflection_date, created_at",
+    )
+    .maybeSingle();
+
+  if (error) {
+    throw error;
+  }
+
+  if (!data) {
+    throw new Error(
+      "Reflection not found or visibility could not be updated (check RLS update policy).",
+    );
+  }
+
+  return data;
+}

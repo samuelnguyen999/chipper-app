@@ -5,7 +5,7 @@ import { lensTypeFromCardType } from "../today/reflect/config";
 
 type CommunityReflectionCardProps = {
   reflection: ReflectionRow;
-  onHold?: () => void;
+  onHold?: (reflection: ReflectionRow) => void;
 };
 
 function toCardData(reflection: ReflectionRow): ReflectionCardData {
@@ -24,5 +24,10 @@ export default function CommunityReflectionCard({
   reflection,
   onHold,
 }: CommunityReflectionCardProps) {
-  return <ReflectionCard card={toCardData(reflection)} onHold={onHold} />;
+  return (
+    <ReflectionCard
+      card={toCardData(reflection)}
+      onHold={onHold ? () => onHold(reflection) : undefined}
+    />
+  );
 }

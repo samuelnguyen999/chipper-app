@@ -14,7 +14,7 @@ export const reflectionQuestionsByTheme = {
   identity: [
     { type: "ground", question: "A strength that remains true about me." },
     { type: "understand", question: "What is being revealed about who I am becoming?" },
-    { type: "align", question: "The person I want to be is someone who..." },
+    { type: "align", question: "I choose to be someone who..." },
   ],
   discipline: [
     { type: "ground", question: "Which routine keeps me steady?" },

@@ -20,7 +20,7 @@
 | Path | Role |
 |------|------|
 | `lib/supabase.ts` | Singleton client; `AsyncStorage` session persistence; requires `EXPO_PUBLIC_*` env vars |
-| `lib/reflections.ts` | `saveReflection`, `getTodaysCommunity`, `getMyReflections` — no AsyncStorage |
+| `lib/reflections.ts` | `saveReflection`, `getTodaysCommunity`, `getMyReflections`, `updateReflectionVisibility` — no AsyncStorage |
 | `lib/offlineReflections.ts` | Pending queue + sync wrapper around `saveReflection` — see **`OFFLINE_STATE.md`** |
 | `hooks/useAnonymousAuth.ts` | Root hook: `getSession` → anonymous sign-in if needed → `getUser`; recovers stale JWT |
 | `hooks/useOfflineReflectionSync.ts` | Fire-and-forget sync after auth; reconnect sync |
@@ -53,7 +53,8 @@ After changing `.env`, restart Metro: `npx expo start --clear`.
    - Insert own: `auth.uid() = user_id`
    - Select public: `is_public = true`
    - Select own (Journal): `auth.uid() = user_id`
-5. **Grants:** `GRANT SELECT, INSERT ON public.reflections TO authenticated;`
+   - Update own (visibility toggle): `auth.uid() = user_id`
+5. **Grants:** `GRANT SELECT, INSERT, UPDATE ON public.reflections TO authenticated;`
 6. If the Users UI looks empty, run in **SQL Editor**:
    ```sql
    select id, is_anonymous, created_at from auth.users order by created_at desc limit 10;

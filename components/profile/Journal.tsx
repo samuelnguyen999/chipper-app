@@ -3,13 +3,23 @@ import { Pressable, StyleSheet, Text, View } from "react-native";
 import { useFocusEffect, useRouter } from "expo-router";
 import NetInfo from "@react-native-community/netinfo";
 import { colors, layout, spacing, textStyles } from "../../constants";
-import { getMyReflections, type ReflectionRow } from "../../lib/reflections";
+import {
+  getMyReflections,
+  updateReflectionVisibility,
+  type ReflectionRow,
+} from "../../lib/reflections";
 import {
   getOfflineReflections,
   isNetworkError,
   mergeReflectionsForJournal,
 } from "../../lib/offlineReflections";
+import {
+  CardInteractionProvider,
+  useCardInteraction,
+  type ResolveCardActionHandlers,
+} from "../interactions";
 import JournalReflectionCard from "./JournalReflectionCard";
+import { useAnonymousAuth } from "../../hooks/useAnonymousAuth";
 
 type JournalGroupKey = "thisWeek" | "lastWeek" | "lastMonth" | "lastYear";
 
@@ -109,8 +119,135 @@ type JournalProps = {
   preview?: boolean;
 };
 
-export default function Journal({ preview = false }: JournalProps) {
+type JournalViewProps = {
+  preview: boolean;
+  reflections: ReflectionRow[];
+  loadState: LoadState;
+  historyUnavailable: boolean;
+};
+
+function JournalView({
+  preview,
+  reflections,
+  loadState,
+  historyUnavailable,
+}: JournalViewProps) {
   const router = useRouter();
+  const { openCardActions } = useCardInteraction();
+  const { userId } = useAnonymousAuth();
+
+  const groups = useMemo(
+    () => (preview ? [] : groupReflectionsByRecency(reflections)),
+    [preview, reflections],
+  );
+
+  // Preview: hide only while first loading or hard error with nothing to show.
+  if (preview && loadState === "pending") {
+    return null;
+  }
+  if (preview && loadState === "error") {
+    return null;
+  }
+
+  const todayKey = getLocalDateKey();
+  const todaysReflection =
+    reflections.find((entry) => entry.reflection_date === todayKey) ?? null;
+  const isEmpty = preview ? todaysReflection == null : reflections.length === 0;
+
+  /** Offline notice only on full Journal — Profile preview stays quiet. */
+  const connectMessage =
+    !preview && historyUnavailable ? (
+      <Text style={textStyles.body}>
+        No internet.{"\n\n"}Connect to view your full journal.
+      </Text>
+    ) : null;
+
+  const body = (() => {
+    if (loadState === "pending") {
+      return null;
+    }
+    if (loadState === "error") {
+      return null;
+    }
+
+    if (isEmpty) {
+      if (connectMessage) {
+        return connectMessage;
+      }
+      if (preview) {
+        return (
+          <View>
+            <Text style={textStyles.body}>No reflection for today yet.</Text>
+            <Text style={[textStyles.body, styles.emptyHint]}>
+              Open to see past entries.
+            </Text>
+          </View>
+        );
+      }
+      return (
+        <View>
+          <Text style={textStyles.body}>Your journal is waiting.</Text>
+          <Text style={[textStyles.body, styles.emptyHint]}>
+            Complete your first reflection to begin.
+          </Text>
+        </View>
+      );
+    }
+
+    if (preview && todaysReflection) {
+      return (
+        <View style={styles.cards}>
+          <JournalReflectionCard
+            reflection={todaysReflection}
+            showVisibility
+            onHold={(reflection) => openCardActions(reflection, userId)}
+          />
+        </View>
+      );
+    }
+
+    return (
+      <View style={styles.groups}>
+        {connectMessage}
+        {groups.map((group) => (
+          <View key={group.key} style={styles.group}>
+            <Text style={textStyles.screenSubtitle}>{group.label}</Text>
+            <View style={styles.cards}>
+              {group.items.map((entry) => (
+                <JournalReflectionCard
+                  key={entry.id}
+                  reflection={entry}
+                  onHold={(reflection) => openCardActions(reflection, userId)}
+                />
+              ))}
+            </View>
+          </View>
+        ))}
+      </View>
+    );
+  })();
+
+  if (preview) {
+    return (
+      <View style={styles.previewSection}>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Open journal"
+          onPress={() => router.push("/journal")}
+          style={({ pressed }) => [styles.previewHeader, pressed && styles.previewHeaderPressed]}
+        >
+          <Text style={textStyles.screenSubtitle}>Journal</Text>
+          <Text style={[textStyles.caption, styles.openLabel]}>Open</Text>
+        </Pressable>
+        {body}
+      </View>
+    );
+  }
+
+  return <View style={styles.fullSection}>{body}</View>;
+}
+
+export default function Journal({ preview = false }: JournalProps) {
   const [reflections, setReflections] = useState<ReflectionRow[]>([]);
   const [loadState, setLoadState] = useState<LoadState>("pending");
   /** True when Supabase history could not be loaded (offline). Pending queue may still show. */
@@ -176,107 +313,30 @@ export default function Journal({ preview = false }: JournalProps) {
     }, []),
   );
 
-  const groups = useMemo(
-    () => (preview ? [] : groupReflectionsByRecency(reflections)),
-    [preview, reflections],
+  const handlers = useMemo<ResolveCardActionHandlers>(
+    () => ({
+      toggleVisibility: async (reflection, nextPublic) => {
+        const updated = await updateReflectionVisibility(reflection.id, nextPublic);
+        setReflections((prev) =>
+          prev.map((row) =>
+            row.id === updated.id ? { ...row, is_public: updated.is_public } : row,
+          ),
+        );
+      },
+    }),
+    [],
   );
 
-  // Preview: hide only while first loading or hard error with nothing to show.
-  if (preview && loadState === "pending") {
-    return null;
-  }
-  if (preview && loadState === "error") {
-    return null;
-  }
-
-  const todayKey = getLocalDateKey();
-  const todaysReflection =
-    reflections.find((entry) => entry.reflection_date === todayKey) ?? null;
-  const isEmpty = preview ? todaysReflection == null : reflections.length === 0;
-
-  /** Offline notice only on full Journal — Profile preview stays quiet. */
-  const connectMessage =
-    !preview && historyUnavailable ? (
-      <Text style={textStyles.body}>
-        No internet.{"\n\n"}Connect to view your full journal.
-      </Text>
-    ) : null;
-
-  const body = (() => {
-    if (loadState === "pending") {
-      return null;
-    }
-    if (loadState === "error") {
-      return null;
-    }
-
-    if (isEmpty) {
-      if (connectMessage) {
-        return connectMessage;
-      }
-      if (preview) {
-        return (
-          <View>
-            <Text style={textStyles.body}>No reflection for today yet.</Text>
-            <Text style={[textStyles.body, styles.emptyHint]}>
-              Open to see past entries.
-            </Text>
-          </View>
-        );
-      }
-      return (
-        <View>
-          <Text style={textStyles.body}>Your journal is waiting.</Text>
-          <Text style={[textStyles.body, styles.emptyHint]}>
-            Complete your first reflection to begin.
-          </Text>
-        </View>
-      );
-    }
-
-    if (preview && todaysReflection) {
-      return (
-        <View style={styles.cards}>
-          <JournalReflectionCard reflection={todaysReflection} showVisibility />
-        </View>
-      );
-    }
-
-    return (
-      <View style={styles.groups}>
-        {connectMessage}
-        {groups.map((group) => (
-          <View key={group.key} style={styles.group}>
-            <Text style={textStyles.screenSubtitle}>{group.label}</Text>
-            <View style={styles.cards}>
-              {group.items.map((entry) => (
-                <JournalReflectionCard key={entry.id} reflection={entry} />
-              ))}
-            </View>
-          </View>
-        ))}
-      </View>
-    );
-  })();
-
-  if (preview) {
-    return (
-      <View style={styles.previewSection}>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Open journal"
-          onPress={() => router.push("/journal")}
-          style={({ pressed }) => [styles.previewHeader, pressed && styles.previewHeaderPressed]}
-        >
-          <Text style={textStyles.screenSubtitle}>Journal</Text>
-          <Text style={[textStyles.caption, styles.openLabel]}>Open</Text>
-        </Pressable>
-        {body}
-      </View>
-    );
-  }
-
-  return <View style={styles.fullSection}>{body}</View>;
+  return (
+    <CardInteractionProvider handlers={handlers}>
+      <JournalView
+        preview={preview}
+        reflections={reflections}
+        loadState={loadState}
+        historyUnavailable={historyUnavailable}
+      />
+    </CardInteractionProvider>
+  );
 }
 
 const styles = StyleSheet.create({

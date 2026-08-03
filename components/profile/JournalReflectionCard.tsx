@@ -9,7 +9,7 @@ import { lensTypeFromCardType } from "../today/reflect/config";
 type JournalReflectionCardProps = {
   reflection: ReflectionRow;
   showVisibility?: boolean;
-  onHold?: () => void;
+  onHold?: (reflection: ReflectionRow) => void;
 };
 
 function formatCardType(cardType: string): string {
@@ -36,7 +36,10 @@ export default function JournalReflectionCard({
 }: JournalReflectionCardProps) {
   return (
     <View style={styles.entry}>
-      <ReflectionCard card={toCardData(reflection)} onHold={onHold} />
+      <ReflectionCard
+        card={toCardData(reflection)}
+        onHold={onHold ? () => onHold(reflection) : undefined}
+      />
       {showVisibility ? (
         <View
           style={styles.visibilityOverlay}
