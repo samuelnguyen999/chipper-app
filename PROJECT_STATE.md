@@ -149,7 +149,12 @@
 
 2. **Reflect / Today** — Product choice: back from Reflect to reset receive flow, or keep linear forward-only.
 
-3. **Card hold interactions** — hold → resolve → sheet; visibility via screen `handlers` → `updateReflectionVisibility`. Edit/delete/reactions still placeholders.
+3. **Card hold interactions** — hold → resolve → sheet; visibility + quiet acknowledgements. Edit/delete still placeholders.
+
+   **Acknowledgements** are intentionally private. They exist as a user practice, not a social metric. The acknowledgement is known only to the reader (the person who acknowledges), never to the writer.
+
+   - **Current:** AsyncStorage daily limit (3); local chip mark for the reader only.
+   - **Future:** Possible server persistence if product requires continuity across devices — still reader-only, never a public count or author notification.
 
 4. **Production linking / EAS** — Validate **`scheme`** with dev client builds.
 

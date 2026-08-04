@@ -8,7 +8,6 @@ import {
 } from "react";
 import type { ReflectionRow } from "../../lib/reflections";
 import type { CardAction } from "./CardAction";
-import CardActionSheet from "./CardActionSheet";
 import {
   resolveCardActions,
   type ResolveCardActionHandlers,
@@ -17,6 +16,11 @@ import {
 type CardInteractionContextValue = {
   openCardActions: (reflection: ReflectionRow, userId: string | null) => void;
   closeCardActions: () => void;
+  /** Active row snapshot (for consumers that need more than id). */
+  activeReflection: ReflectionRow | null;
+  /** Match key — cards compare this to their reflection.id */
+  activeReflectionId: string | null;
+  actions: CardAction[];
 };
 
 const CardInteractionContext = createContext<CardInteractionContextValue | null>(null);
@@ -24,15 +28,15 @@ const CardInteractionContext = createContext<CardInteractionContextValue | null>
 type CardInteractionProviderProps = {
   children: ReactNode;
   /**
-   * Optional handlers embedded into resolved `CardAction.onPress` values.
-   * Provider does not interpret action meaning — it only resolves and runs them.
+   * Handlers embedded into resolved CardAction.onPress by resolveCardActions.
+   * Provider does not interpret action ids or call services.
    */
   handlers?: ResolveCardActionHandlers;
 };
 
 /**
- * Interaction state only: active reflection, resolved actions, sheet open/close.
- * Action behavior lives on each `CardAction.onPress`.
+ * Active-card state + action lifecycle only.
+ * Presentation mounts on the matching card; business logic stays in screen handlers / resolveCardActions.
  */
 export function CardInteractionProvider({
   children,
@@ -59,8 +63,7 @@ export function CardInteractionProvider({
           void (async () => {
             try {
               await action.onPress();
-              setActiveReflection(null);
-              setActions([]);
+              closeCardActions();
             } catch (error) {
               console.error("Card action failed:", error);
             }
@@ -68,25 +71,31 @@ export function CardInteractionProvider({
         },
       }));
 
+      // No actions (e.g. acknowledgements feature off on others' cards) → no expand.
+      if (resolved.length === 0) {
+        return;
+      }
+
       setActiveReflection(reflection);
       setActions(resolved);
     },
-    [handlers],
+    [handlers, closeCardActions],
   );
 
   const value = useMemo(
-    () => ({ openCardActions, closeCardActions }),
-    [openCardActions, closeCardActions],
+    () => ({
+      openCardActions,
+      closeCardActions,
+      activeReflection,
+      activeReflectionId: activeReflection?.id ?? null,
+      actions,
+    }),
+    [openCardActions, closeCardActions, activeReflection, actions],
   );
 
   return (
     <CardInteractionContext.Provider value={value}>
       {children}
-      <CardActionSheet
-        visible={activeReflection != null}
-        actions={actions}
-        onClose={closeCardActions}
-      />
     </CardInteractionContext.Provider>
   );
 }

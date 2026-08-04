@@ -1,3 +1,4 @@
+import { useRef } from "react";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
 import LogoGallery, { FontPresetCycleButton, Journal } from "../../components/profile";
 import { layout, screen, spacing, textStyles } from "../../constants";
@@ -5,18 +6,20 @@ import { useRedirectWhenTabsLocked } from "../../state/useRedirectWhenTabsLocked
 
 export default function ProfileScreen() {
   useRedirectWhenTabsLocked();
+  const scrollDismissRef = useRef<(() => void) | null>(null);
 
   return (
     <ScrollView
       style={styles.scroll}
       contentContainerStyle={styles.container}
       showsVerticalScrollIndicator={false}
+      onScrollBeginDrag={() => scrollDismissRef.current?.()}
     >
       <View style={styles.header}>
         <Text style={[textStyles.screenTitle, styles.title]}>Your Profile</Text>
         <FontPresetCycleButton />
       </View>
-      <Journal preview />
+      <Journal preview scrollDismissRef={scrollDismissRef} />
       <LogoGallery embedded />
     </ScrollView>
   );

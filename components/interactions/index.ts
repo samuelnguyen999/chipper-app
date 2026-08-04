@@ -1,6 +1,6 @@
-export type { CardAction } from "./CardAction";
+export type { CardAction, CardActionPresentationProps } from "./CardAction";
 export { resolveCardActions, type ResolveCardActionHandlers } from "./resolveCardActions";
-export { default as CardActionSheet } from "./CardActionSheet";
+export { default as CardExpandedActions } from "./CardExpandedActions";
 export {
   CardInteractionProvider,
   useCardInteraction,

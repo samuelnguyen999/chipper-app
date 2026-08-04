@@ -20,6 +20,8 @@ type ScrollRailProps = {
   children: ReactNode;
   style?: StyleProp<ViewStyle>;
   contentContainerStyle?: StyleProp<ViewStyle>;
+  /** Fires when the user begins dragging the scroll view. */
+  onScrollBeginDrag?: () => void;
 };
 
 const RAIL_WIDTH = 3;
@@ -33,7 +35,12 @@ const FADE_EASING = Easing.out(Easing.quad);
 /**
  * ScrollView with a side rail that appears while scrolling and fades out when idle.
  */
-export default function ScrollRail({ children, style, contentContainerStyle }: ScrollRailProps) {
+export default function ScrollRail({
+  children,
+  style,
+  contentContainerStyle,
+  onScrollBeginDrag,
+}: ScrollRailProps) {
   const [viewportH, setViewportH] = useState(0);
   const [contentH, setContentH] = useState(0);
   const [offsetY, setOffsetY] = useState(0);
@@ -70,7 +77,8 @@ export default function ScrollRail({ children, style, contentContainerStyle }: S
 
   const onScrollBegin = useCallback(() => {
     showRailIndicator();
-  }, [showRailIndicator]);
+    onScrollBeginDrag?.();
+  }, [showRailIndicator, onScrollBeginDrag]);
 
   const onScrollEnd = useCallback(() => {
     scheduleHideRail();

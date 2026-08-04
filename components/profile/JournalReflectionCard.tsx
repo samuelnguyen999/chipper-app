@@ -5,6 +5,8 @@ import type { ReflectionCardData } from "../cards/types";
 import { colors, spacing } from "../../constants";
 import type { ReflectionRow } from "../../lib/reflections";
 import { lensTypeFromCardType } from "../today/reflect/config";
+import CardExpandedActions from "../interactions/CardExpandedActions";
+import { useCardInteraction } from "../interactions/CardInteractionProvider";
 
 type JournalReflectionCardProps = {
   reflection: ReflectionRow;
@@ -34,11 +36,15 @@ export default function JournalReflectionCard({
   showVisibility = false,
   onHold,
 }: JournalReflectionCardProps) {
+  const { activeReflectionId, actions } = useCardInteraction();
+  const isActive = activeReflectionId === reflection.id;
+
   return (
     <View style={styles.entry}>
       <ReflectionCard
         card={toCardData(reflection)}
         onHold={onHold ? () => onHold(reflection) : undefined}
+        footer={isActive ? <CardExpandedActions actions={actions} /> : undefined}
       />
       {showVisibility ? (
         <View

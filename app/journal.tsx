@@ -1,8 +1,6 @@
-import { StyleSheet } from "react-native";
 import { Stack } from "expo-router";
 import { Journal } from "../components/profile";
-import ScrollRail from "../components/ui/ScrollRail";
-import { colors, screen } from "../constants";
+import { colors } from "../constants";
 import { useRedirectWhenTabsLocked } from "../state/useRedirectWhenTabsLocked";
 
 export default function JournalScreen() {
@@ -20,14 +18,7 @@ export default function JournalScreen() {
           headerTitleStyle: { color: colors.onPrimary },
         }}
       />
-      <ScrollRail style={styles.scroll} contentContainerStyle={styles.container}>
-        <Journal />
-      </ScrollRail>
+      <Journal />
     </>
   );
 }
-
-const styles = StyleSheet.create({
-  scroll: screen.scroll,
-  container: screen.scrollContent,
-});

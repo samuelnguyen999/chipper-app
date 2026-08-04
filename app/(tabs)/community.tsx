@@ -3,14 +3,22 @@ import { useCallback, useMemo, useState } from "react";
 import { useFocusEffect } from "expo-router";
 import NetInfo from "@react-native-community/netinfo";
 import CommunityReflectionCard from "../../components/community";
+import CommunityPresenceMoment from "../../components/community/CommunityPresenceMoment";
+import CommunityPurposeInfo from "../../components/community/CommunityPurposeInfo";
 import {
   CardInteractionProvider,
   useCardInteraction,
   type ResolveCardActionHandlers,
 } from "../../components/interactions";
 import ScrollRail from "../../components/ui/ScrollRail";
-import { layout, screen, textStyles } from "../../constants";
+import { layout, screen, spacing, textStyles } from "../../constants";
 import { useAnonymousAuth } from "../../hooks/useAnonymousAuth";
+import {
+  ACKNOWLEDGEMENTS_DAILY_LIMIT,
+  acknowledgeReflection,
+  getTodaysAcknowledgedIds,
+} from "../../lib/acknowledgementService";
+import { isAcknowledgementsEnabled } from "../../lib/featureFlags";
 import {
   getTodaysCommunity,
   updateReflectionVisibility,
@@ -19,21 +27,32 @@ import {
 import { isNetworkError } from "../../lib/offlineReflections";
 import { useRedirectWhenTabsLocked } from "../../state/useRedirectWhenTabsLocked";
 
+const ACKNOWLEDGEMENTS_ENABLED = isAcknowledgementsEnabled();
+
 type LoadState = "pending" | "ready" | "error" | "offline";
 
 function CommunityCards({
   reflections,
   loadState,
+  acknowledgedIds,
 }: {
   reflections: ReflectionRow[];
   loadState: LoadState;
+  acknowledgedIds: Set<string>;
 }) {
-  const { openCardActions } = useCardInteraction();
+  const { openCardActions, closeCardActions } = useCardInteraction();
   const { userId } = useAnonymousAuth();
 
   return (
-    <ScrollRail style={styles.scroll} contentContainerStyle={styles.container}>
-      <Text style={textStyles.screenTitle}>Community</Text>
+    <ScrollRail
+      style={styles.scroll}
+      contentContainerStyle={styles.container}
+      onScrollBeginDrag={closeCardActions}
+    >
+      <View style={styles.header}>
+        <Text style={[textStyles.screenTitle, styles.title]}>Community</Text>
+        <CommunityPurposeInfo />
+      </View>
       {loadState === "pending" ? null : loadState === "offline" ? (
         <Text style={textStyles.body}>
           No internet.{"\n\n"}Connect to see today's community.
@@ -50,6 +69,9 @@ function CommunityCards({
             <CommunityReflectionCard
               key={entry.id}
               reflection={entry}
+              acknowledged={
+                ACKNOWLEDGEMENTS_ENABLED && acknowledgedIds.has(entry.id)
+              }
               onHold={(reflection) => openCardActions(reflection, userId)}
             />
           ))}
@@ -63,6 +85,10 @@ export default function CommunityScreen() {
   useRedirectWhenTabsLocked();
   const [reflections, setReflections] = useState<ReflectionRow[]>([]);
   const [loadState, setLoadState] = useState<LoadState>("pending");
+  const [acknowledgedIds, setAcknowledgedIds] = useState<Set<string>>(
+    () => new Set(),
+  );
+  const [presenceMomentVisible, setPresenceMomentVisible] = useState(false);
 
   useFocusEffect(
     useCallback(() => {
@@ -70,7 +96,16 @@ export default function CommunityScreen() {
 
       async function load() {
         try {
-          const net = await NetInfo.fetch();
+          const [ackIds, net] = await Promise.all([
+            ACKNOWLEDGEMENTS_ENABLED
+              ? getTodaysAcknowledgedIds()
+              : Promise.resolve([] as string[]),
+            NetInfo.fetch(),
+          ]);
+          if (!cancelled) {
+            setAcknowledgedIds(new Set(ackIds));
+          }
+
           if (net.isConnected === false) {
             if (!cancelled) {
               setLoadState((prev) => (prev === "ready" ? prev : "offline"));
@@ -113,13 +148,44 @@ export default function CommunityScreen() {
           return prev.map((row) => (row.id === updated.id ? updated : row));
         });
       },
+      ...(ACKNOWLEDGEMENTS_ENABLED
+        ? {
+            acknowledge: async (reflection: ReflectionRow) => {
+              const result = await acknowledgeReflection(reflection.id);
+
+              if (result.status === "already_acknowledged") {
+                setAcknowledgedIds((prev) => new Set(prev).add(reflection.id));
+                return;
+              }
+
+              if (result.status === "daily_limit_reached") {
+                setPresenceMomentVisible(true);
+                return;
+              }
+
+              setAcknowledgedIds((prev) => new Set(prev).add(reflection.id));
+
+              if (result.countToday >= ACKNOWLEDGEMENTS_DAILY_LIMIT) {
+                setPresenceMomentVisible(true);
+              }
+            },
+          }
+        : {}),
     }),
     [],
   );
 
   return (
     <CardInteractionProvider handlers={handlers}>
-      <CommunityCards reflections={reflections} loadState={loadState} />
+      <CommunityCards
+        reflections={reflections}
+        loadState={loadState}
+        acknowledgedIds={acknowledgedIds}
+      />
+      <CommunityPresenceMoment
+        visible={presenceMomentVisible}
+        onClose={() => setPresenceMomentVisible(false)}
+      />
     </CardInteractionProvider>
   );
 }
@@ -127,6 +193,15 @@ export default function CommunityScreen() {
 const styles = StyleSheet.create({
   scroll: screen.scroll,
   container: screen.scrollContent,
+  header: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    justifyContent: "space-between",
+    gap: spacing.sm,
+  },
+  title: {
+    flex: 1,
+  },
   cards: {
     gap: layout.screenColumnGap,
   },

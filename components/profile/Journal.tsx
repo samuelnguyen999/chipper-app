@@ -1,8 +1,8 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState, type MutableRefObject, type ReactNode } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { useFocusEffect, useRouter } from "expo-router";
 import NetInfo from "@react-native-community/netinfo";
-import { colors, layout, spacing, textStyles } from "../../constants";
+import { colors, layout, screen, spacing, textStyles } from "../../constants";
 import {
   getMyReflections,
   updateReflectionVisibility,
@@ -18,6 +18,7 @@ import {
   useCardInteraction,
   type ResolveCardActionHandlers,
 } from "../interactions";
+import ScrollRail from "../ui/ScrollRail";
 import JournalReflectionCard from "./JournalReflectionCard";
 import { useAnonymousAuth } from "../../hooks/useAnonymousAuth";
 
@@ -117,7 +118,43 @@ type LoadState = "pending" | "ready" | "error";
 type JournalProps = {
   /** Preview mode for Profile overview — today's reflection + open control. */
   preview?: boolean;
+  /**
+   * Optional bridge for a parent ScrollView (Profile preview) to collapse
+   * the active card on scroll without lifting provider state.
+   */
+  scrollDismissRef?: MutableRefObject<(() => void) | null>;
 };
+
+function BindScrollDismiss({
+  scrollDismissRef,
+}: {
+  scrollDismissRef?: MutableRefObject<(() => void) | null>;
+}) {
+  const { closeCardActions } = useCardInteraction();
+
+  useEffect(() => {
+    if (!scrollDismissRef) return;
+    scrollDismissRef.current = closeCardActions;
+    return () => {
+      scrollDismissRef.current = null;
+    };
+  }, [closeCardActions, scrollDismissRef]);
+
+  return null;
+}
+
+function JournalScrollRail({ children }: { children: ReactNode }) {
+  const { closeCardActions } = useCardInteraction();
+  return (
+    <ScrollRail
+      style={styles.scroll}
+      contentContainerStyle={styles.scrollContent}
+      onScrollBeginDrag={closeCardActions}
+    >
+      {children}
+    </ScrollRail>
+  );
+}
 
 type JournalViewProps = {
   preview: boolean;
@@ -247,7 +284,7 @@ function JournalView({
   return <View style={styles.fullSection}>{body}</View>;
 }
 
-export default function Journal({ preview = false }: JournalProps) {
+export default function Journal({ preview = false, scrollDismissRef }: JournalProps) {
   const [reflections, setReflections] = useState<ReflectionRow[]>([]);
   const [loadState, setLoadState] = useState<LoadState>("pending");
   /** True when Supabase history could not be loaded (offline). Pending queue may still show. */
@@ -327,19 +364,26 @@ export default function Journal({ preview = false }: JournalProps) {
     [],
   );
 
+  const view = (
+    <JournalView
+      preview={preview}
+      reflections={reflections}
+      loadState={loadState}
+      historyUnavailable={historyUnavailable}
+    />
+  );
+
   return (
     <CardInteractionProvider handlers={handlers}>
-      <JournalView
-        preview={preview}
-        reflections={reflections}
-        loadState={loadState}
-        historyUnavailable={historyUnavailable}
-      />
+      <BindScrollDismiss scrollDismissRef={scrollDismissRef} />
+      {preview ? view : <JournalScrollRail>{view}</JournalScrollRail>}
     </CardInteractionProvider>
   );
 }
 
 const styles = StyleSheet.create({
+  scroll: screen.scroll,
+  scrollContent: screen.scrollContent,
   previewSection: {
     marginBottom: layout.sectionGap,
     gap: spacing.md,
