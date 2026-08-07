@@ -24,5 +24,8 @@ export const identityQuotes = [
   "The cold water does not get warmer if you jump late",
   "No one is you and thats your superpower",
   "Do I need more information, or do I need more courage?",
-  "If you fake bravery when you're terrified, that is bravery"
+  "If you fake bravery when you're terrified, that is bravery",
+  "Losers seek compliments, winners seek correction",
+  "You cannot use someone else's map to find yourself",
+  "Maybe your garden isn't growing because every time a flower grows, you cut it to prove to someone you're a gardener."
 ] as const;

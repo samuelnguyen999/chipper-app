@@ -36,4 +36,5 @@ export const actionQuotes = [
   "Don't waste time chasing butterflies, mend your garden, and the butterflies will come.",
   "Your environment will change you faster than motivation ever will.",
   "Life isn't about finding yourself. It's about creating yourself.",
+  "You're future begins with the choices you make today. No one can walk your path for you. Take full repoonsibility for your progress."
 ] as const;

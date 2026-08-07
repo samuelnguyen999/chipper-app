@@ -27,7 +27,7 @@ export const reflectionQuestionsByTheme = {
     { type: "align", question: "This is the mindset I choose to carry." },
   ],
   resilience: [
-    { type: "ground", question: "This is true and keeps me going..." },
+    { type: "ground", question: "This is true and keeps me going." },
     { type: "understand", question: "What am I learning through challenges?" },
     { type: "align", question: "Where will I choose courage over hesitation?" },
   ],

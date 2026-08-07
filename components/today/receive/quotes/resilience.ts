@@ -29,6 +29,8 @@ export const resilienceQuotes = [
   "Pain brings out passion and aliveness",
   "You've made it through 100% of your difficult days.",
   "When the road gets bumpy, you don't leave the car, you put your seatbelt on",
-  "A winner is a loser who tried one. More. Time.",
+  "A winner is a loser who tried One. More. Time.",
   "Temporary emotions should not make permanent decisions",
+  "Take more pride in the process than in the results themselves",
+  "I know it's heavy, but it will pass. I also know it will pass, but it's heavy."
 ] as const;

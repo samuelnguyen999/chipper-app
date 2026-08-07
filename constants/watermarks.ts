@@ -18,22 +18,28 @@ export type WatermarkConfig = {
    * - contain — whole art visible (may letterbox)
    */
   fit?: WatermarkFit;
+  /** Optional uniform scale of the mark (1 = full size). */
+  transform?: { scale: number };
 };
 
 const cookieCrumb = require("../assets/watermarks/cookie_crumb.png");
+const cookieCircle = require("../assets/watermarks/cookie_circle.png");
 
 const defaultMark = (opacity: number): WatermarkConfig => ({
-  source: cookieCrumb,
+  source: cookieCircle,
   opacity,
-  fit: "cover",
+  fit: "contain",
+  transform: {
+    scale: .9,
+  },
 });
 
 /**
  * Per-surface watermark map — edit here to enable tabs or change artwork/opacity.
  */
 export const watermarkBySurface: Record<WatermarkSurface, WatermarkConfig | null> = {
-  receive: null, //defaultMark(0.14),
-  today: null, //defaultMark(0.14),
+  receive: null, //defaultMark(1),
+  today: defaultMark(1),
   community: null,
   profile: null,
 };

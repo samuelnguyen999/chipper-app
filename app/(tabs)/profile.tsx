@@ -16,7 +16,7 @@ export default function ProfileScreen() {
       onScrollBeginDrag={() => scrollDismissRef.current?.()}
     >
       <View style={styles.header}>
-        <Text style={[textStyles.screenTitle, styles.title]}>Your Profile</Text>
+        <Text style={[textStyles.screenTitle, styles.title]}>Profile</Text>
         <FontPresetCycleButton />
       </View>
       <Journal preview scrollDismissRef={scrollDismissRef} />

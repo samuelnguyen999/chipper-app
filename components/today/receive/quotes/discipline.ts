@@ -31,4 +31,5 @@ export const disciplineQuotes = [
   "Consistency turns potential into proof",
   "If you show up every day the results won't have a choice",
   "Commit every day without negotiation. Remove the decision. Stop asking if today is the day-just show up. Excuses fade, resistance weekens, and discipline becomes who you are.",
+  "A life built only around immediate pleasure becomes dull. A life built around achievement becomes vibrant."
 ] as const;

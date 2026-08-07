@@ -20,6 +20,8 @@ export {
   getActiveFontPreset,
   getAllFontLoadMap,
   getFontFamilies,
+  getTitleHorizontalInsetScale,
+  getTitleLineHeightScale,
   nextFontPreset,
   setActiveFontPreset,
   usesAppFont,

@@ -31,7 +31,7 @@
     ],
     "extra": {
       "appEnv": "production",
-      "devStartAt": "reflect",
+      "devStartAt": "receive",
       "acknowledgementsEnabled": false
     }
   }

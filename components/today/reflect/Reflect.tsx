@@ -24,7 +24,7 @@ type ReflectProps = { onUnlocked?: () => void };
 const OFFLINE_SAVE_MESSAGE =
   "Saved on this device. We'll upload when you're connected.";
 
-const DUPLICATE_ALERT_TITLE = "Already reflected today";
+const DUPLICATE_ALERT_TITLE = "Duplicate Reflection";
 const DUPLICATE_ALERT_BODY =
   "You already have a reflection for today. Continuing without saving another.";
 

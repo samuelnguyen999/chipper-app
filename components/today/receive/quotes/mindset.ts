@@ -38,4 +38,10 @@ export const mindsetQuotes = [
   "Letting go means giving the future version of yourself a chance",
   "We have two lives, and the second one starts when we realize we only have one",
   "If you don't like something, change it. If you can't change it, change the way you think about it.",
+  "Success belongs less to those with perfect circumstances and more to those who create momentum from imperfect ones. Resourcefulness builds the path. Self-awareness keeps you on it.",
+  "Never forget you were born to win",
+  "Get clear on what kind of life makes you proud, and then get to work.",
+  "Stop fighting reality, acknowledge and dictate your reponse.",
+  "The life you're rushing through, someone else would've given everything for one more day of it.",
+  "You can't give your life more time. So, give the time you have more life."
 ] as const;

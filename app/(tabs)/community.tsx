@@ -51,7 +51,7 @@ function CommunityCards({
     >
       <View style={styles.header}>
         <Text style={[textStyles.screenTitle, styles.title]}>Community</Text>
-        <CommunityPurposeInfo />
+        {ACKNOWLEDGEMENTS_ENABLED ? <CommunityPurposeInfo /> : null}
       </View>
       {loadState === "pending" ? null : loadState === "offline" ? (
         <Text style={textStyles.body}>

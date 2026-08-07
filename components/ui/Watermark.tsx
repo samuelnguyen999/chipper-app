@@ -14,6 +14,7 @@ export default function Watermark({ surface, opacity, style }: WatermarkLayerPro
 
   const resolvedOpacity = opacity ?? config.opacity;
   const fit = config.fit ?? "cover";
+  const scale = config.transform?.scale;
 
   return (
     <View
@@ -25,7 +26,11 @@ export default function Watermark({ surface, opacity, style }: WatermarkLayerPro
       <Image
         source={config.source}
         resizeMode={fit}
-        style={[styles.image, { opacity: resolvedOpacity }]}
+        style={[
+          styles.image,
+          { opacity: resolvedOpacity },
+          scale != null && { transform: [{ scale }] },
+        ]}
       />
     </View>
   );

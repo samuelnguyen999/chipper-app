@@ -1,7 +1,18 @@
 import { useState } from "react";
 import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { colors, font, radii, spacing, textSize, textStyles } from "../../constants";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import {
+  colors,
+  font,
+  getTitleLineHeightScale,
+  layout,
+  radii,
+  scaleFontSize,
+  spacing,
+  textSize,
+  textStyles,
+} from "../../constants";
 
 export const COMMUNITY_PURPOSE_COPY = `
 Read with curiosity.
@@ -13,11 +24,22 @@ When a reflection connects with you, offer a quiet acknowledgment. Your support 
 Together, we build shared understanding, connection, and growth.
 `;
 
+/** Match Community header block: title line + screenTitle marginBottom. */
+function communityHeaderBlockHeight(): number {
+  const fontSize = scaleFontSize("title");
+  const lineHeight = Math.round(fontSize * getTitleLineHeightScale());
+  return lineHeight + spacing.md;
+}
+
 /**
  * Community header purpose control — same info icon + muted copy language as Reflect ChoiceCard.
  */
 export default function CommunityPurposeInfo() {
   const [open, setOpen] = useState(false);
+  const insets = useSafeAreaInsets();
+  /** Align sheet top with first card (under scene safe area + scroll pad + header). */
+  const sheetTop =
+    insets.top + layout.screenPadding + communityHeaderBlockHeight();
 
   return (
     <>
@@ -44,7 +66,7 @@ export default function CommunityPurposeInfo() {
         onRequestClose={() => setOpen(false)}
         statusBarTranslucent
       >
-        <View style={styles.backdrop}>
+        <View style={[styles.backdrop, { paddingTop: sheetTop }]}>
           <Pressable
             style={StyleSheet.absoluteFill}
             onPress={() => setOpen(false)}
@@ -109,8 +131,8 @@ const styles = StyleSheet.create({
   backdrop: {
     flex: 1,
     backgroundColor: "rgba(0,0,0,0.50)",
-    justifyContent: "center",
-    paddingHorizontal: spacing.xl,
+    justifyContent: "flex-start",
+    paddingHorizontal: layout.screenPadding,
   },
   sheet: {
     backgroundColor: colors.surfaceCard,

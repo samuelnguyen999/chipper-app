@@ -13,8 +13,7 @@ export default function LockedTodayScreen() {
 
   useEffect(() => {
     if (isHydrated && mainTabsUnlocked) {
-      router.replace("/(tabs)");
-    }
+      router.replace("/(tabs)/community")    }
   }, [isHydrated, mainTabsUnlocked, router]);
 
   const handleUnlocked = useCallback(() => {

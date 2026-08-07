@@ -20,16 +20,22 @@ function RecapHintSlot() {
   );
 }
 
+/**
+ * Today tab recap — watermark fills the scene above the tab bar
+ * (same stage box as Receive landing above the CTA dock).
+ */
 export default function TodayRecap() {
   return (
     <View style={styles.container}>
-      <Watermark surface="today" />
-      <View style={styles.content}>
-        <Text style={textStyles.screenTitle}>Today</Text>
-        <View style={styles.quoteStage}>
-          <View style={styles.centerCluster}>
-            <ReceiveQuote text={receiveCopy.quote} />
-            <RecapHintSlot />
+      <View style={styles.watermarkStage}>
+        <Watermark surface="today" />
+        <View style={styles.content}>
+          <Text style={textStyles.screenTitle}>Today</Text>
+          <View style={styles.quoteStage}>
+            <View style={styles.centerCluster}>
+              <ReceiveQuote text={receiveCopy.quote} />
+              <RecapHintSlot />
+            </View>
           </View>
         </View>
       </View>
@@ -41,12 +47,18 @@ const styles = StyleSheet.create({
   container: {
     ...screen.fill,
     paddingTop: layout.screenPadding,
-    paddingHorizontal: layout.screenPadding,
-    paddingBottom: layout.screenScrollBottomPadding,
+  },
+  /** Full scene above tab bar — matches Receive `watermarkStage` above CTA dock. */
+  watermarkStage: {
+    flex: 1,
+    minHeight: 0,
+    position: "relative",
+    overflow: "hidden",
   },
   content: {
     flex: 1,
     zIndex: 1,
+    paddingHorizontal: layout.screenPadding,
   },
   quoteStage: {
     flex: 1,

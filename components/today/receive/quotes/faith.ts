@@ -24,4 +24,8 @@ export const faithQuotes = [
   "But seek first the kingdom of God and His righteousness, and all these things shall be added to you. \n Matthew 6:33",
   "Come to Me, all you who labor and are heavy laden, and I will give you rest. Take My yoke upon you and learn from Me, for I am gentle and lowly in heart, and you will find rest for your souls. For My yoke is easy and My burden is light. \n Matthew 11:28-30",
   "For whoever desires to save his life will lose it, but whoever loses his life for My sake will find it. \nMatthew 16:25",
+  "Dear God, remove the comfort that keeps me average and replace it with courage to become who you created me to be. Amen.",
+  "Search me, O God, and know my heart; test me and know my anxious thoughts. See if there is any offensive way in me, and lead me in the way everlasting. \n Psalm 139:23-24",
+  "May I have the wisdom to recognize what no longer belongs in my life, the strength to release it, and the faith to believe that whatever God asks me to surrender is never greater than what He has in store.",
+  "Fear asks you to trust the unknown with worry. Faith asks you to trust the unknown with God. Both require belief."
 ] as const;

@@ -1,5 +1,5 @@
 import { Text, StyleSheet, View } from "react-native";
-import { textStyles } from "../../../../constants";
+import { spacing, textStyles } from "../../../../constants";
 
 type ReceiveLandingQuoteProps = {
   text: string;
@@ -18,5 +18,7 @@ const styles = StyleSheet.create({
     alignSelf: "stretch",
     width: "100%",
     alignItems: "center",
+    /** Extra inset so copy clears the cookie-circle watermark ring. */
+    paddingHorizontal: spacing.xxxl,
   },
 });
