@@ -3,8 +3,10 @@ import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
 import { useEffect } from "react";
+import { StyleSheet, View } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { FontPresetProvider } from "../components/profile/FontPresetContext";
+import BreathUnlockHost from "../components/today/transitions/BreathUnlockHost";
 import { getAllFontLoadMap } from "../constants/fonts";
 import { useAnonymousAuth } from "../hooks/useAnonymousAuth";
 import { useOfflineReflectionSync } from "../hooks/useOfflineReflectionSync";
@@ -38,41 +40,50 @@ export default function RootLayout() {
         <FontPresetProvider>
           <OfflineReflectionSync />
           <StatusBar style="light" />
-          <Stack>
-            <Stack.Screen
-              name="index"
-              options={{
-                headerShown: false,
-              }}
-            />
-            <Stack.Screen
-              name="(locked)"
-              options={{
-                headerShown: false,
-              }}
-            />
-            <Stack.Screen
-              name="(tabs)"
-              options={{
-                headerShown: false,
-              }}
-            />
-            <Stack.Screen
-              name="journal"
-              options={{
-                headerShown: true,
-                headerTitle: "Journal",
-              }}
-            />
-            <Stack.Screen
-              name="+not-found"
-              options={{
-                headerTitle: "Not Found",
-              }}
-            />
-          </Stack>
+          <View style={styles.shell}>
+            <Stack>
+              <Stack.Screen
+                name="index"
+                options={{
+                  headerShown: false,
+                }}
+              />
+              <Stack.Screen
+                name="(locked)"
+                options={{
+                  headerShown: false,
+                }}
+              />
+              <Stack.Screen
+                name="(tabs)"
+                options={{
+                  headerShown: false,
+                }}
+              />
+              <Stack.Screen
+                name="journal"
+                options={{
+                  headerShown: true,
+                  headerTitle: "Journal",
+                }}
+              />
+              <Stack.Screen
+                name="+not-found"
+                options={{
+                  headerTitle: "Not Found",
+                }}
+              />
+            </Stack>
+            <BreathUnlockHost />
+          </View>
         </FontPresetProvider>
       </TabAccessProvider>
     </GestureHandlerRootView>
   );
 }
+
+const styles = StyleSheet.create({
+  shell: {
+    flex: 1,
+  },
+});

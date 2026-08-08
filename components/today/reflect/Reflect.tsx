@@ -58,7 +58,11 @@ export default function Reflect({ onUnlocked }: ReflectProps) {
   const [focusBackNonce, setFocusBackNonce] = useState(0);
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
-  const bottomPad = layout.screenScrollBottomPadding + (!mainTabsUnlocked ? insets.bottom : 0);
+  // Keep bottom inset stable while FocusView is up — unlock must not reflow the card
+  // under the breath overlay (mainTabsUnlocked would otherwise drop insets.bottom).
+  const bottomPad =
+    layout.screenScrollBottomPadding +
+    (!mainTabsUnlocked || focusedChoice != null ? insets.bottom : 0);
   const backOpacity = useSharedValue(0);
 
   useEffect(() => {
@@ -98,9 +102,10 @@ export default function Reflect({ onUnlocked }: ReflectProps) {
   }, []);
 
   const completeUnlock = useCallback(() => {
-    setFocusedChoice(null);
-    unlockMainTabs();
+    // Breath flag first so locked hydrate can't race a bare unlock redirect.
+    // Keep FocusView mounted under the overlay (don't flash card stack).
     handleUnlocked();
+    unlockMainTabs();
   }, [handleUnlocked, unlockMainTabs]);
 
   const completeUnlockAfterDuplicate = useCallback(() => {

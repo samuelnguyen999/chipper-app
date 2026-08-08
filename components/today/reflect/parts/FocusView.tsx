@@ -158,12 +158,16 @@ export default function FocusView({
   const [visibility, setVisibility] = useState<ReflectionVisibility>("public");
   const [slotSize, setSlotSize] = useState({ width: 0, height: 0 });
   const [promptHeight, setPromptHeight] = useState(0);
+  /** Once submit starts, keep “Saving…” — don’t flash back to Submit under the breath overlay. */
+  const [saveLatched, setSaveLatched] = useState(false);
   const isExitingRef = useRef(false);
   const inputRef = useRef<TextInputType>(null);
   const preferredVisibilityRef = useRef<ReflectionVisibility>("public");
   const growStartedRef = useRef(false);
 
-  const canSubmit = response.trim().length > 0 && !isSubmitting;
+  const hasResponse = response.trim().length > 0;
+  const showSaving = saveLatched || isSubmitting;
+  const canSubmit = hasResponse && !showSaving;
 
   const dismissKeyboard = useCallback(() => {
     inputRef.current?.blur();
@@ -172,16 +176,19 @@ export default function FocusView({
 
   const handleSubmit = useCallback(async () => {
     const trimmed = response.trim();
-    if (!trimmed || isSubmitting) return;
-    dismissKeyboard();
+    if (!trimmed || showSaving) return;
+    setSaveLatched(true);
     try {
       await onSubmitResponse({ mode, prompt, response: trimmed, visibility });
       preferredVisibilityRef.current = visibility;
       await setReflectionVisibilityPreference(visibility);
+      // Dismiss after unlock/breath starts so keyboard reflow happens under the overlay.
+      dismissKeyboard();
     } catch {
-      // Parent owns error UI; do not persist preference on failed save.
+      // Parent owns error UI; allow retry after a failed save.
+      setSaveLatched(false);
     }
-  }, [dismissKeyboard, isSubmitting, mode, onSubmitResponse, prompt, response, visibility]);
+  }, [dismissKeyboard, mode, onSubmitResponse, prompt, response, showSaving, visibility]);
 
   /** 0 = stack handoff (full purpose chrome, centered prompt); 1 = focus settled. */
   const progress = useSharedValue(0);
@@ -191,9 +198,10 @@ export default function FocusView({
   const responseOpacity = useSharedValue(0);
   const toggleReveal = useSharedValue(0);
 
+  // Reveal from response text only — do not hide toggle while isSubmitting (avoids flash).
   useEffect(() => {
-    toggleReveal.value = withTiming(canSubmit ? 1 : 0, TOGGLE_TIMING);
-  }, [canSubmit, toggleReveal]);
+    toggleReveal.value = withTiming(hasResponse ? 1 : 0, TOGGLE_TIMING);
+  }, [hasResponse, toggleReveal]);
 
   useEffect(() => {
     let cancelled = false;
@@ -213,6 +221,7 @@ export default function FocusView({
     setResponse("");
     setVisibility(preferredVisibilityRef.current);
     setPromptHeight(0);
+    setSaveLatched(false);
     growStartedRef.current = false;
     isExitingRef.current = false;
   }, [mode]);
@@ -393,20 +402,20 @@ export default function FocusView({
       <View style={styles.footerRow} accessibilityRole="toolbar">
         <Animated.View
           style={[styles.footerToggleSlot, toggleRevealStyle]}
-          pointerEvents={canSubmit ? "auto" : "none"}
+          pointerEvents={hasResponse && !showSaving ? "auto" : "none"}
         >
           <VisibilityToggle value={visibility} onChange={setVisibility} />
         </Animated.View>
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel="Submit reflection"
-          accessibilityState={{ disabled: !canSubmit }}
+          accessibilityLabel={showSaving ? "Saving reflection" : "Submit reflection"}
+          accessibilityState={{ disabled: !canSubmit, busy: showSaving }}
           disabled={!canSubmit}
           hitSlop={8}
           onPress={handleSubmit}
           style={({ pressed }) => [
             styles.submitHit,
-            !canSubmit && styles.submitDisabled,
+            (!hasResponse || showSaving) && styles.submitDisabled,
             pressed && canSubmit && styles.submitPressed,
           ]}
         >
@@ -414,10 +423,10 @@ export default function FocusView({
             style={[
               textStyles.buttonLabel,
               styles.submitLabel,
-              !canSubmit && styles.submitLabelDisabled,
+              (!hasResponse || showSaving) && styles.submitLabelDisabled,
             ]}
           >
-            {isSubmitting ? "Saving…" : "Submit"}
+            {showSaving ? "Saving…" : "Submit"}
           </Text>
         </Pressable>
       </View>
