@@ -42,7 +42,7 @@ const tabBarDockCellPaddingBottom = 10;
 export const layout = {
   /** Horizontal inset for wide content (receive main column, headings, tab scenes). */
   screenPadding: spacing.xl,
-  /** Bottom inset for scrollable tab scenes (above tab bar / home indicator). */
+  /** Bottom inset for stack scroll scenes (Journal, Reflect) — not tab scenes. */
   screenScrollBottomPadding: spacing.xxl,
   /** Space below a screen header block before primary content. */
   screenHeaderAfterMargin: spacing.md,

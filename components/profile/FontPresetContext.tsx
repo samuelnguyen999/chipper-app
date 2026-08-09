@@ -98,7 +98,7 @@ export function FontPresetProvider({ children }: { children: ReactNode }) {
 
   return (
     <FontPresetContext.Provider value={value}>
-      <View key={`${preset}-${sizePreset}`} style={{ flex: 1 }} collapsable={false}>
+      <View style={{ flex: 1 }} collapsable={false}>
         {children}
       </View>
     </FontPresetContext.Provider>
@@ -111,4 +111,9 @@ export function useFontPreset(): FontPresetContextValue {
     throw new Error("useFontPreset must be used inside FontPresetProvider");
   }
   return context;
+}
+
+/** Call at screen roots that render `textStyles` so they re-render (not remount) on cycle. */
+export function useFontPresetSubscription(): void {
+  useFontPreset();
 }

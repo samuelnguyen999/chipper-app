@@ -1,8 +1,10 @@
 import { View, Text, StyleSheet } from "react-native";
 import { Link } from "expo-router";
+import { useFontPresetSubscription } from "../components/profile";
 import { colors, textStyles } from "../constants";
 
 export default function NotFoundScreen() {
+  useFontPresetSubscription();
   return (
       <View style={styles.container}>
         <Text style={[textStyles.emphasis, styles.text]}>Page Not Found</Text>

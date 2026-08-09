@@ -23,6 +23,7 @@ export default function TabsLayout() {
         backgroundColor: colors.tabHeader,
         borderTopColor: colors.borderSubtle,
         borderTopWidth: layout.tabBarDockBorderTop,
+        // Item cells already pad below labels; only the dock’s own pad here (not insets.bottom).
         paddingBottom: layout.tabBarDockPaddingBottom,
       },
       tabBarLabelStyle: {

@@ -1,11 +1,16 @@
 import { useRef } from "react";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
-import LogoGallery, { FontPresetCycleButton, Journal } from "../../components/profile";
+import LogoGallery, {
+  FontPresetCycleButton,
+  Journal,
+  useFontPresetSubscription,
+} from "../../components/profile";
 import { layout, screen, spacing, textStyles } from "../../constants";
 import { useRedirectWhenTabsLocked } from "../../state/useRedirectWhenTabsLocked";
 
 export default function ProfileScreen() {
   useRedirectWhenTabsLocked();
+  useFontPresetSubscription();
   const scrollDismissRef = useRef<(() => void) | null>(null);
 
   return (
@@ -27,7 +32,8 @@ export default function ProfileScreen() {
 
 const styles = StyleSheet.create({
   scroll: screen.scroll,
-  container: screen.scrollContent,
+  /** End pad = same as Community’s last-card gap (`screenColumnGap`). */
+  container: screen.scrollContentTab,
   header: {
     flexDirection: "row",
     alignItems: "flex-start",

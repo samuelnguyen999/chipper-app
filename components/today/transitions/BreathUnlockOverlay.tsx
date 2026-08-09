@@ -35,6 +35,7 @@ const SEQUENCE: readonly {
   { cover: "topThird", duration: INHALE_MS, holdAfter: HOLD_MS, label: "Breathe in" },
   { cover: "half", duration: EXHALE_MS, holdAfter: HOLD_MS, label: "Breathe out" },
   { cover: "full", duration: INHALE_MS, holdAfter: HOLD_MS, label: "Breathe in", covered: true },
+  /** Third breathe-out: cocoa → tab height; cream unveils 1→0 in parallel. */
   { cover: "settled", duration: EXHALE_MS, holdAfter: 0, label: "Breathe out" },
   // Then sheet opacity fades (SHEET_FADE_OUT_MS) — not a cover move.
 ];
@@ -48,7 +49,9 @@ type BreathUnlockOverlayProps = {
 
 /**
  * Post-unlock breath sheet. Presentational only — caller owns navigation.
- * Cocoa sheet rises over Focus; Community loads under full cover, unveils on last exhale.
+ * Cocoa sheet rises over Focus; Community loads under full cover.
+ * Cream unveils (100→0) on the third breathe-out as cocoa settles to tab height,
+ * then the cocoa sheet fades out.
  */
 export default function BreathUnlockOverlay({
   visible,
@@ -62,7 +65,7 @@ export default function BreathUnlockOverlay({
   const labelHeight = useSharedValue(0);
   const labelOpacity = useSharedValue(0);
   const sheetOpacity = useSharedValue(1);
-  /** Cream veil — fades in over Focus; clears at final exhale for Community unveil. */
+  /** Cream veil — fades in over Focus; unveils (1→0) on third breathe-out with cocoa settle. */
   const backdropOpacity = useSharedValue(0);
   const startedRef = useRef(false);
   const finishedRef = useRef(false);
@@ -157,8 +160,10 @@ export default function BreathUnlockOverlay({
       withDelay(SEQUENCE[4]!.holdAfter, fadeTo(0, SEQUENCE[5]!.duration)),
     );
 
-    // Fade in from phase start through first inhale → hold → first exhale
-    // (full at start of hold after first exhale). Snap clear at last breathe-out.
+    // Fade in through first inhale → hold → first exhale (full cream).
+    // Hold at 100% until third breathe-out, then unveil 1→0 while cocoa settles
+    // to tab height — complete before the cocoa sheet opacity fade.
+    const finalExhale = SEQUENCE[SEQUENCE.length - 1]!;
     const veilInMs =
       SEQUENCE[0]!.duration + SEQUENCE[0]!.holdAfter + SEQUENCE[1]!.duration;
     const toFinalExhaleStart = SEQUENCE.slice(0, -1).reduce(
@@ -167,14 +172,17 @@ export default function BreathUnlockOverlay({
     );
     backdropOpacity.value = withSequence(
       fadeTo(1, veilInMs),
-      withDelay(Math.max(0, toFinalExhaleStart - veilInMs), withTiming(0, { duration: 0 })),
+      withDelay(
+        Math.max(0, toFinalExhaleStart - veilInMs),
+        fadeTo(0, finalExhale.duration),
+      ),
     );
 
     const breathMs = SEQUENCE.reduce(
       (sum, step) => sum + step.duration + step.holdAfter,
       0,
     );
-    // Stay at tab height, then fade cocoa so the real tab bar eases in underneath.
+    // After cream unveils and cocoa is at tab height, fade cocoa sheet away.
     sheetOpacity.value = withDelay(breathMs, fadeTo(0, SHEET_FADE_OUT_MS));
 
     const timers: ReturnType<typeof setTimeout>[] = [];

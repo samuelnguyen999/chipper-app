@@ -14,11 +14,23 @@ export const screen = {
     backgroundColor: colors.background,
   } satisfies ViewStyle,
 
-  /** ScrollView `contentContainerStyle` — default bottom = tab scene scroll inset. */
+  /** ScrollView `contentContainerStyle` — stack/modals (Journal, etc.). */
   scrollContent: {
     paddingTop: layout.screenPadding,
     paddingHorizontal: layout.screenPadding,
     paddingBottom: layout.screenScrollBottomPadding,
+    backgroundColor: colors.background,
+  } satisfies ViewStyle,
+
+  /**
+   * Tab scenes sit above the dock. End pad matches list-card `marginBottom`
+   * (`layout.screenColumnGap`). Community cards already include that gap — use
+   * `paddingBottom: 0` there so it doesn’t double.
+   */
+  scrollContentTab: {
+    paddingTop: layout.screenPadding,
+    paddingHorizontal: layout.screenPadding,
+    paddingBottom: layout.screenColumnGap,
     backgroundColor: colors.background,
   } satisfies ViewStyle,
 

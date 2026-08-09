@@ -1,8 +1,10 @@
 import { View, Text, StyleSheet } from "react-native";
 import { useLocalSearchParams } from "expo-router";
+import { useFontPresetSubscription } from "../../components/profile";
 import { layout, textStyles } from "../../constants";
 
 export default function PostScreen() {
+  useFontPresetSubscription();
   const { id } = useLocalSearchParams<{ id: string }>();
 
   return (

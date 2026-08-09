@@ -1,6 +1,14 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import Animated, {
+  Easing,
+  FadeInDown,
+  FadeOut,
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
   colors,
@@ -14,15 +22,20 @@ import {
   textStyles,
 } from "../../constants";
 
-export const COMMUNITY_PURPOSE_COPY = `
-Read with curiosity.
-Hold space for another person.
-Leave encouraged to take your next step.
+export const COMMUNITY_PURPOSE_COPY = [
+  "Read with curiosity.",
+  "Hold space for another person.",
+  "Leave encouraged to take your next step.",
+  "",
+  "When a reflection connects with you, offer a quiet acknowledgment. Your support stays private. The writer will never know.",
+  "",
+  "Together, we build shared understanding, connection, and growth.",
+].join("\n");
 
-When a reflection connects with you, offer a quiet acknowledgment. Your support stays private. The writer will never know.
-
-Together, we build shared understanding, connection, and growth.
-`;
+/** Match ChoiceCard purpose toggle enter/exit. */
+const PURPOSE_ENTER_MS = 450;
+const PURPOSE_EXIT_MS = 300;
+const FADE_EASING = Easing.inOut(Easing.cubic);
 
 /** Match Community header block: title line + screenTitle marginBottom. */
 function communityHeaderBlockHeight(): number {
@@ -33,13 +46,46 @@ function communityHeaderBlockHeight(): number {
 
 /**
  * Community header purpose control — same info icon + muted copy language as Reflect ChoiceCard.
+ * Sheet uses FadeInDown / FadeOut; scrim opacity tracks the same enter/exit timing.
  */
 export default function CommunityPurposeInfo() {
-  const [open, setOpen] = useState(false);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [sheetMounted, setSheetMounted] = useState(false);
+  const closingRef = useRef(false);
+  const backdropOpacity = useSharedValue(0);
   const insets = useSafeAreaInsets();
   /** Align sheet top with first card (under scene safe area + scroll pad + header). */
   const sheetTop =
     insets.top + layout.screenPadding + communityHeaderBlockHeight();
+
+  const open = () => {
+    closingRef.current = false;
+    backdropOpacity.value = 0;
+    setModalOpen(true);
+    setSheetMounted(true);
+    backdropOpacity.value = withTiming(1, {
+      duration: PURPOSE_ENTER_MS,
+      easing: FADE_EASING,
+    });
+  };
+
+  const dismiss = () => {
+    if (closingRef.current || !sheetMounted) return;
+    closingRef.current = true;
+    setSheetMounted(false);
+    backdropOpacity.value = withTiming(0, {
+      duration: PURPOSE_EXIT_MS,
+      easing: FADE_EASING,
+    });
+    setTimeout(() => {
+      setModalOpen(false);
+      closingRef.current = false;
+    }, PURPOSE_EXIT_MS);
+  };
+
+  const scrimStyle = useAnimatedStyle(() => ({
+    opacity: backdropOpacity.value,
+  }));
 
   return (
     <>
@@ -47,7 +93,7 @@ export default function CommunityPurposeInfo() {
         accessibilityRole="button"
         accessibilityLabel="Community purpose"
         accessibilityHint="Shows why Community exists"
-        onPress={() => setOpen(true)}
+        onPress={open}
         style={({ pressed }) => [styles.infoHit, pressed && styles.pressed]}
         hitSlop={8}
       >
@@ -60,49 +106,48 @@ export default function CommunityPurposeInfo() {
       </Pressable>
 
       <Modal
-        visible={open}
+        visible={modalOpen}
         transparent
-        animationType="fade"
-        onRequestClose={() => setOpen(false)}
+        animationType="none"
+        onRequestClose={dismiss}
         statusBarTranslucent
       >
-        <View style={[styles.backdrop, { paddingTop: sheetTop }]}>
+        <View style={[styles.root, { paddingTop: sheetTop }]}>
+          <Animated.View style={[styles.scrim, scrimStyle]} pointerEvents="none" />
           <Pressable
             style={StyleSheet.absoluteFill}
-            onPress={() => setOpen(false)}
+            onPress={dismiss}
             accessibilityRole="button"
             accessibilityLabel="Close purpose"
           />
-          <View style={styles.sheet} accessibilityViewIsModal>
-            <View style={styles.leadRow}>
-              <Ionicons
-                name="information-circle-outline"
-                size={18}
-                color={colors.textMuted}
-                style={styles.infoIcon}
-              />
-              <Text style={[font("regular"), styles.infoHint, textSize("sm")]}>Purpose</Text>
-            </View>
-            <ScrollView
-              showsVerticalScrollIndicator={false}
-              style={styles.scroll}
-              contentContainerStyle={styles.scrollContent}
+          {sheetMounted ? (
+            <Animated.View
+              entering={FadeInDown.duration(PURPOSE_ENTER_MS)}
+              exiting={FadeOut.duration(PURPOSE_EXIT_MS)}
+              style={styles.sheet}
+              accessibilityViewIsModal
             >
-              <Text
-                style={[font("regular"), styles.purpose, textSize("sm"), { lineHeight: 22 }]}
+              <ScrollView
+                showsVerticalScrollIndicator={false}
+                style={styles.scroll}
+                contentContainerStyle={styles.scrollContent}
               >
-                {COMMUNITY_PURPOSE_COPY}
-              </Text>
-            </ScrollView>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Close"
-              onPress={() => setOpen(false)}
-              style={({ pressed }) => [styles.closeRow, pressed && styles.pressed]}
-            >
-              <Text style={[textStyles.caption, styles.closeHint]}>Close</Text>
-            </Pressable>
-          </View>
+                <Text
+                  style={[font("regular"), styles.purpose, textSize("md"), { lineHeight: 24 }]}
+                >
+                  {COMMUNITY_PURPOSE_COPY}
+                </Text>
+              </ScrollView>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Close"
+                onPress={dismiss}
+                style={({ pressed }) => [styles.closeBand, pressed && styles.pressed]}
+              >
+                <Text style={[textStyles.caption, styles.closeHint]}>Close</Text>
+              </Pressable>
+            </Animated.View>
+          ) : null}
         </View>
       </Modal>
     </>
@@ -120,43 +165,41 @@ const styles = StyleSheet.create({
     marginLeft: spacing.xs,
     marginRight: spacing.xs,
   },
-  infoHint: {
-    color: colors.textMuted,
-  },
-  leadRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: spacing.md,
-  },
-  backdrop: {
+  root: {
     flex: 1,
-    backgroundColor: "rgba(0,0,0,0.50)",
     justifyContent: "flex-start",
     paddingHorizontal: layout.screenPadding,
+  },
+  scrim: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(0,0,0,0.70)",
   },
   sheet: {
     backgroundColor: colors.surfaceCard,
     borderRadius: radii.md,
     paddingHorizontal: spacing.xl,
     paddingTop: spacing.xl,
-    paddingBottom: spacing.lg,
+    paddingBottom: 0,
     maxHeight: "70%",
   },
   scroll: {
     flexGrow: 0,
   },
   scrollContent: {
-    paddingBottom: spacing.sm,
+    paddingBottom: 0,
   },
   purpose: {
     color: colors.textMuted,
   },
-  closeRow: {
-    marginTop: spacing.md,
+  /** Equal air above Close (after copy) and below Close (to card edge). */
+  closeBand: {
+    paddingTop: spacing.xl,
+    paddingBottom: spacing.xl,
     alignItems: "center",
-    paddingVertical: spacing.sm,
   },
   closeHint: {
     color: colors.textMuted,
+    marginBottom: 0,
+    opacity: 0.4,
   },
 });

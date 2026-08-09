@@ -1,5 +1,5 @@
-import { StyleSheet, Text, View } from "react-native";
-import { useCallback, useMemo, useState } from "react";
+import { StyleSheet, Text, View, Keyboard } from "react-native";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { useFocusEffect } from "expo-router";
 import NetInfo from "@react-native-community/netinfo";
 import CommunityReflectionCard from "../../components/community";
@@ -10,8 +10,9 @@ import {
   useCardInteraction,
   type ResolveCardActionHandlers,
 } from "../../components/interactions";
+import { useFontPresetSubscription } from "../../components/profile";
 import ScrollRail from "../../components/ui/ScrollRail";
-import { layout, screen, spacing, textStyles } from "../../constants";
+import { screen, spacing, textStyles } from "../../constants";
 import { useAnonymousAuth } from "../../hooks/useAnonymousAuth";
 import {
   ACKNOWLEDGEMENTS_DAILY_LIMIT,
@@ -20,7 +21,9 @@ import {
 } from "../../lib/acknowledgementService";
 import { isAcknowledgementsEnabled } from "../../lib/featureFlags";
 import {
+  deleteReflection,
   getTodaysCommunity,
+  updateReflectionResponse,
   updateReflectionVisibility,
   type ReflectionRow,
 } from "../../lib/reflections";
@@ -35,10 +38,22 @@ function CommunityCards({
   reflections,
   loadState,
   acknowledgedIds,
+  editingId,
+  editDraft,
+  onEditDraftChange,
+  onSaveEdit,
+  exitingId,
+  onExitComplete,
 }: {
   reflections: ReflectionRow[];
   loadState: LoadState;
   acknowledgedIds: Set<string>;
+  editingId: string | null;
+  editDraft: string;
+  onEditDraftChange: (text: string) => void;
+  onSaveEdit: () => void | Promise<void>;
+  exitingId: string | null;
+  onExitComplete: (reflectionId: string) => void;
 }) {
   const { openCardActions, closeCardActions } = useCardInteraction();
   const { userId } = useAnonymousAuth();
@@ -64,7 +79,7 @@ function CommunityCards({
           Daily public reflections will appear here.
         </Text>
       ) : (
-        <View style={styles.cards}>
+        <View>
           {reflections.map((entry) => (
             <CommunityReflectionCard
               key={entry.id}
@@ -73,6 +88,12 @@ function CommunityCards({
                 ACKNOWLEDGEMENTS_ENABLED && acknowledgedIds.has(entry.id)
               }
               onHold={(reflection) => openCardActions(reflection, userId)}
+              editing={editingId === entry.id}
+              editDraft={editingId === entry.id ? editDraft : undefined}
+              onEditDraftChange={onEditDraftChange}
+              onSaveEdit={onSaveEdit}
+              exiting={exitingId === entry.id}
+              onExitComplete={() => onExitComplete(entry.id)}
             />
           ))}
         </View>
@@ -83,12 +104,23 @@ function CommunityCards({
 
 export default function CommunityScreen() {
   useRedirectWhenTabsLocked();
+  useFontPresetSubscription();
   const [reflections, setReflections] = useState<ReflectionRow[]>([]);
   const [loadState, setLoadState] = useState<LoadState>("pending");
   const [acknowledgedIds, setAcknowledgedIds] = useState<Set<string>>(
     () => new Set(),
   );
   const [presenceMomentVisible, setPresenceMomentVisible] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editDraft, setEditDraft] = useState("");
+  const [exitingId, setExitingId] = useState<string | null>(null);
+  const savingEditRef = useRef(false);
+  /** Delete or make-private — list removal runs after the shared exit wipe. */
+  const pendingExitRef = useRef<
+    | { kind: "delete"; reflection: ReflectionRow }
+    | { kind: "private"; reflection: ReflectionRow }
+    | null
+  >(null);
 
   useFocusEffect(
     useCallback(() => {
@@ -140,13 +172,24 @@ export default function CommunityScreen() {
   const handlers = useMemo<ResolveCardActionHandlers>(
     () => ({
       toggleVisibility: async (reflection, nextPublic) => {
+        if (!nextPublic) {
+          // Leave the public list with the same wipe as delete.
+          pendingExitRef.current = { kind: "private", reflection };
+          setExitingId(reflection.id);
+          return;
+        }
         const updated = await updateReflectionVisibility(reflection.id, nextPublic);
-        setReflections((prev) => {
-          if (!updated.is_public) {
-            return prev.filter((row) => row.id !== updated.id);
-          }
-          return prev.map((row) => (row.id === updated.id ? updated : row));
-        });
+        setReflections((prev) =>
+          prev.map((row) => (row.id === updated.id ? updated : row)),
+        );
+      },
+      edit: (reflection) => {
+        setEditingId(reflection.id);
+        setEditDraft(reflection.response);
+      },
+      delete: (reflection) => {
+        pendingExitRef.current = { kind: "delete", reflection };
+        setExitingId(reflection.id);
       },
       ...(ACKNOWLEDGEMENTS_ENABLED
         ? {
@@ -175,12 +218,74 @@ export default function CommunityScreen() {
     [],
   );
 
+  const saveEdit = useCallback(async () => {
+    if (!editingId || savingEditRef.current) return;
+    const trimmed = editDraft.trim();
+    if (!trimmed) return;
+
+    savingEditRef.current = true;
+    try {
+      const updated = await updateReflectionResponse(editingId, trimmed);
+      setReflections((prev) =>
+        prev.map((row) => (row.id === updated.id ? { ...row, response: updated.response } : row)),
+      );
+      setEditingId(null);
+      setEditDraft("");
+      Keyboard.dismiss();
+    } catch (error) {
+      console.error("Edit reflection failed:", error);
+    } finally {
+      savingEditRef.current = false;
+    }
+  }, [editDraft, editingId]);
+
+  const finishExit = useCallback(async (reflectionId: string) => {
+    const pending = pendingExitRef.current;
+    pendingExitRef.current = null;
+    if (!pending || pending.reflection.id !== reflectionId) {
+      setExitingId(null);
+      return;
+    }
+
+    const { reflection, kind } = pending;
+
+    // Drop from list while still collapsed — clearing exiting first pops the card back.
+    setReflections((prev) => prev.filter((row) => row.id !== reflection.id));
+    setEditingId((current) => {
+      if (current === reflection.id) {
+        setEditDraft("");
+        return null;
+      }
+      return current;
+    });
+    setExitingId(null);
+
+    try {
+      if (kind === "delete") {
+        await deleteReflection(reflection.id);
+      } else {
+        await updateReflectionVisibility(reflection.id, false);
+      }
+    } catch (error) {
+      console.error(
+        kind === "delete" ? "Delete reflection failed:" : "Make private failed:",
+        error,
+      );
+    }
+  }, []);
+
   return (
     <CardInteractionProvider handlers={handlers}>
       <CommunityCards
         reflections={reflections}
         loadState={loadState}
         acknowledgedIds={acknowledgedIds}
+        editingId={editingId}
+        editDraft={editDraft}
+        onEditDraftChange={setEditDraft}
+        onSaveEdit={saveEdit}
+        exitingId={exitingId}
+        onExitComplete={finishExit}
       />
       <CommunityPresenceMoment
         visible={presenceMomentVisible}
@@ -192,17 +297,18 @@ export default function CommunityScreen() {
 
 const styles = StyleSheet.create({
   scroll: screen.scroll,
-  container: screen.scrollContent,
+  /** Cards carry `screenColumnGap` as marginBottom — don’t double the end pad. */
+  container: { ...screen.scrollContentTab, paddingBottom: 0 },
   header: {
     flexDirection: "row",
-    alignItems: "flex-start",
-    justifyContent: "space-between",
-    gap: spacing.sm,
+    alignItems: "center",
+    justifyContent: "flex-start",
+    gap: spacing.xs,
+    // screenTitle’s marginBottom would offset vertical centering of the info icon.
+    marginBottom: spacing.md,
   },
   title: {
-    flex: 1,
-  },
-  cards: {
-    gap: layout.screenColumnGap,
+    flexShrink: 1,
+    marginBottom: 0,
   },
 });

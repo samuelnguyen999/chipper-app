@@ -31,7 +31,9 @@ type LogoGalleryProps = {
 export default function LogoGallery({ embedded = false }: LogoGalleryProps) {
   const { width: windowWidth } = useWindowDimensions();
   const [selected, setSelected] = useState<ProfileLogo | null>(null);
-  const [galleryItems] = useState(() => shuffle(profileLogos));
+  const [galleryItems] = useState(() =>
+    shuffle(profileLogos).slice(0, profileGalleryLayout.sessionCount),
+  );
 
   const columnGap = layout.screenColumnGap;
   const tileWidth =

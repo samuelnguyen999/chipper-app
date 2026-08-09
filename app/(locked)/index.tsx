@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { StyleSheet, View } from "react-native";
 import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useFontPresetSubscription } from "../../components/profile";
 import TodayExperience from "../../components/today/TodayExperience";
 import { colors } from "../../constants";
 import {
@@ -12,6 +13,7 @@ import {
 import { useTabAccess } from "../../state/TabAccessContext";
 
 export default function LockedTodayScreen() {
+  useFontPresetSubscription();
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { isHydrated, mainTabsUnlocked } = useTabAccess();

@@ -196,3 +196,84 @@ export async function updateReflectionVisibility(
 
   return data;
 }
+
+/**
+ * Update `response` for a single reflection owned by the current user.
+ * Relies on RLS (`auth.uid() = user_id`) plus an explicit `user_id` filter.
+ */
+export async function updateReflectionResponse(
+  reflectionId: string,
+  response: string,
+): Promise<ReflectionRow> {
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser();
+
+  if (authError) {
+    throw authError;
+  }
+
+  if (!user) {
+    throw new Error("User not authenticated");
+  }
+
+  const { data, error } = await supabase
+    .from("reflections")
+    .update({ response })
+    .eq("id", reflectionId)
+    .eq("user_id", user.id)
+    .select(
+      "id, user_id, card_type, question, response, is_public, reflection_date, created_at",
+    )
+    .maybeSingle();
+
+  if (error) {
+    throw error;
+  }
+
+  if (!data) {
+    throw new Error(
+      "Reflection not found or response could not be updated (check RLS update policy).",
+    );
+  }
+
+  return data;
+}
+
+/**
+ * Delete a single reflection owned by the current user.
+ * Relies on RLS (`auth.uid() = user_id`) plus an explicit `user_id` filter.
+ */
+export async function deleteReflection(reflectionId: string): Promise<void> {
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser();
+
+  if (authError) {
+    throw authError;
+  }
+
+  if (!user) {
+    throw new Error("User not authenticated");
+  }
+
+  const { data, error } = await supabase
+    .from("reflections")
+    .delete()
+    .eq("id", reflectionId)
+    .eq("user_id", user.id)
+    .select("id")
+    .maybeSingle();
+
+  if (error) {
+    throw error;
+  }
+
+  if (!data) {
+    throw new Error(
+      "Reflection not found or could not be deleted (check RLS delete policy).",
+    );
+  }
+}

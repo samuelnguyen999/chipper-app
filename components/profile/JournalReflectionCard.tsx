@@ -2,16 +2,24 @@ import { StyleSheet, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import ReflectionCard from "../cards/ReflectionCard";
 import type { ReflectionCardData } from "../cards/types";
-import { colors, spacing } from "../../constants";
+import { colors, layout, spacing } from "../../constants";
 import type { ReflectionRow } from "../../lib/reflections";
 import { lensTypeFromCardType } from "../today/reflect/config";
-import CardExpandedActions from "../interactions/CardExpandedActions";
+import CardExpandedActions, {
+  resolveActionRow,
+} from "../interactions/CardExpandedActions";
 import { useCardInteraction } from "../interactions/CardInteractionProvider";
 
 type JournalReflectionCardProps = {
   reflection: ReflectionRow;
   showVisibility?: boolean;
   onHold?: (reflection: ReflectionRow) => void;
+  editing?: boolean;
+  editDraft?: string;
+  onEditDraftChange?: (text: string) => void;
+  onSaveEdit?: () => void | Promise<void>;
+  exiting?: boolean;
+  onExitComplete?: () => void;
 };
 
 function formatCardType(cardType: string): string {
@@ -35,9 +43,16 @@ export default function JournalReflectionCard({
   reflection,
   showVisibility = false,
   onHold,
+  editing = false,
+  editDraft,
+  onEditDraftChange,
+  onSaveEdit,
+  exiting = false,
+  onExitComplete,
 }: JournalReflectionCardProps) {
   const { activeReflectionId, actions } = useCardInteraction();
-  const isActive = activeReflectionId === reflection.id;
+  const isActive = activeReflectionId === reflection.id && !exiting;
+  const borderSplits = isActive ? resolveActionRow(actions).splitCount : 0;
 
   return (
     <View style={styles.entry}>
@@ -45,6 +60,13 @@ export default function JournalReflectionCard({
         card={toCardData(reflection)}
         onHold={onHold ? () => onHold(reflection) : undefined}
         footer={isActive ? <CardExpandedActions actions={actions} /> : undefined}
+        borderSplits={borderSplits}
+        editing={editing}
+        editDraft={editDraft}
+        onEditDraftChange={onEditDraftChange}
+        onSaveEdit={onSaveEdit}
+        exiting={exiting}
+        onExitComplete={onExitComplete}
       />
       {showVisibility ? (
         <View
@@ -72,7 +94,9 @@ const styles = StyleSheet.create({
   visibilityOverlay: {
     position: "absolute",
     right: spacing.md,
-    bottom: spacing.md,
+    // ReflectionCard uses marginBottom for list gap; entry box includes it, so
+    // offset bottom by that gap to keep the icon inset against the card edge.
+    bottom: spacing.md + layout.screenColumnGap,
     opacity: 0.55,
   },
   lockIconNudge: {

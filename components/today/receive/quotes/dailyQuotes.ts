@@ -32,7 +32,7 @@ const FALLBACK_QUOTE = "It's Sweet At The Top";
  * weekday advances +1 mod length and growing a pool does not remapping prior weeks.
  */
 /** Most recent Sunday before/at “ship” — JS months are 0-indexed (7 = August). */
-const QUOTE_WEEK_EPOCH = new Date(2026, 7, 2); // Sunday 2026-08-02 local
+const QUOTE_WEEK_EPOCH = new Date(2026, 4, 2); // Sunday 2026-08-02 local
 
 function startOfLocalDay(date: Date): Date {
   return new Date(date.getFullYear(), date.getMonth(), date.getDate());

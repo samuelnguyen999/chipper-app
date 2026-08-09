@@ -22,6 +22,8 @@ export const profileLogos: readonly ProfileLogo[] = [
   { id: "logo-chocolate-emblem", label: "Chocolate Emblem", category: "logo", source: require("../../assets/Logos/Chocolate Emblem.png") },
   { id: "logo-chrome", label: "Chrome", category: "logo", source: require("../../assets/Logos/Chrome.jpg") },
   { id: "logo-classic", label: "classic", category: "logo", source: require("../../assets/Logos/classic.jpg") },
+  { id: "logo-clipart-cookie", label: "clipart cookie", category: "logo", source: require("../../assets/Logos/clipart cookie.png") },
+  { id: "logo-cookie-c", label: "cookie c", category: "logo", source: require("../../assets/Logos/cookie c.png") },
   { id: "logo-cookie-logo", label: "Cookie logo", category: "logo", source: require("../../assets/Logos/Cookie logo.png") },
   { id: "logo-final-logo", label: "Final Logo", category: "logo", source: require("../../assets/Logos/Final Logo.png") },
   { id: "logo-flower-emblem", label: "Flower Emblem", category: "logo", source: require("../../assets/Logos/Flower Emblem.png") },

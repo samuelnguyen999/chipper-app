@@ -21,6 +21,10 @@ export type ResolveCardActionHandlers = {
     reflection: ReflectionRow,
     nextPublic: boolean,
   ) => void | Promise<void>;
+  /** Enter inline edit for an own card — omit to keep a log placeholder. */
+  edit?: (reflection: ReflectionRow) => void | Promise<void>;
+  /** Delete a past own card — omit to keep a log placeholder. */
+  delete?: (reflection: ReflectionRow) => void | Promise<void>;
   /** Quiet acknowledgement for another user's card. */
   acknowledge?: (reflection: ReflectionRow) => void | Promise<void>;
 };
@@ -28,7 +32,6 @@ export type ResolveCardActionHandlers = {
 /**
  * Sole owner of which hold-actions exist (ownership + date).
  * Product rules only — no UI, no storage/service imports.
- * Future: acknowledge | edit | visibility | delete — keep rules here.
  */
 export function resolveCardActions(
   reflection: ReflectionRow,
@@ -62,7 +65,9 @@ export function resolveCardActions(
   const editAction: CardAction = {
     id: "edit",
     label: "Edit",
-    onPress: placeholder("edit", reflection.id),
+    onPress: handlers.edit
+      ? () => handlers.edit!(reflection)
+      : placeholder("edit", reflection.id),
   };
 
   if (isToday) {
@@ -84,7 +89,9 @@ export function resolveCardActions(
     {
       id: "delete",
       label: "Delete",
-      onPress: placeholder("delete", reflection.id),
+      onPress: handlers.delete
+        ? () => handlers.delete!(reflection)
+        : placeholder("delete", reflection.id),
     },
   ];
 }
