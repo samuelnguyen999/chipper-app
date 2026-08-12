@@ -1,12 +1,10 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type MutableRefObject, type ReactNode } from "react";
-import { Keyboard, Pressable, StyleSheet, Text, View } from "react-native";
+import { useCallback, useEffect, useMemo, useState, type MutableRefObject, type ReactNode } from "react";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 import { useFocusEffect, useRouter } from "expo-router";
 import NetInfo from "@react-native-community/netinfo";
 import { colors, layout, screen, spacing, textStyles } from "../../constants";
 import {
-  deleteReflection,
   getMyReflections,
-  updateReflectionResponse,
   updateReflectionVisibility,
   type ReflectionRow,
 } from "../../lib/reflections";
@@ -23,6 +21,7 @@ import {
 import ScrollRail from "../ui/ScrollRail";
 import JournalReflectionCard from "./JournalReflectionCard";
 import { useAnonymousAuth } from "../../hooks/useAnonymousAuth";
+import { useReflectionCardMutations } from "../../hooks/useReflectionCardMutations";
 
 type JournalGroupKey = "thisWeek" | "lastWeek" | "lastMonth" | "lastYear";
 
@@ -315,11 +314,16 @@ export default function Journal({ preview = false, scrollDismissRef }: JournalPr
   const [loadState, setLoadState] = useState<LoadState>("pending");
   /** True when Supabase history could not be loaded (offline). Pending queue may still show. */
   const [historyUnavailable, setHistoryUnavailable] = useState(false);
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [editDraft, setEditDraft] = useState("");
-  const [exitingId, setExitingId] = useState<string | null>(null);
-  const savingEditRef = useRef(false);
-  const pendingDeleteRef = useRef<ReflectionRow | null>(null);
+  const {
+    editingId,
+    editDraft,
+    setEditDraft,
+    exitingId,
+    beginEdit,
+    saveEdit,
+    startExit,
+    finishExit,
+  } = useReflectionCardMutations({ setReflections });
 
   useFocusEffect(
     useCallback(() => {
@@ -391,65 +395,13 @@ export default function Journal({ preview = false, scrollDismissRef }: JournalPr
           ),
         );
       },
-      edit: (reflection) => {
-        setEditingId(reflection.id);
-        setEditDraft(reflection.response);
-      },
+      edit: beginEdit,
       delete: (reflection) => {
-        // UI first: collapse card; API + list patch run in onExitComplete.
-        pendingDeleteRef.current = reflection;
-        setExitingId(reflection.id);
+        startExit({ kind: "delete", reflection });
       },
     }),
-    [],
+    [beginEdit, startExit],
   );
-
-  const finishDeleteExit = useCallback(async (reflectionId: string) => {
-    const reflection = pendingDeleteRef.current;
-    pendingDeleteRef.current = null;
-    if (!reflection || reflection.id !== reflectionId) {
-      setExitingId(null);
-      return;
-    }
-
-    // Drop from list while still collapsed — clearing exiting first pops the card back.
-    setReflections((prev) => prev.filter((row) => row.id !== reflection.id));
-    setEditingId((current) => {
-      if (current === reflection.id) {
-        setEditDraft("");
-        return null;
-      }
-      return current;
-    });
-    setExitingId(null);
-
-    try {
-      await deleteReflection(reflection.id);
-    } catch (error) {
-      console.error("Delete reflection failed:", error);
-    }
-  }, []);
-
-  const saveEdit = useCallback(async () => {
-    if (!editingId || savingEditRef.current) return;
-    const trimmed = editDraft.trim();
-    if (!trimmed) return;
-
-    savingEditRef.current = true;
-    try {
-      const updated = await updateReflectionResponse(editingId, trimmed);
-      setReflections((prev) =>
-        prev.map((row) => (row.id === updated.id ? { ...row, response: updated.response } : row)),
-      );
-      setEditingId(null);
-      setEditDraft("");
-      Keyboard.dismiss();
-    } catch (error) {
-      console.error("Edit reflection failed:", error);
-    } finally {
-      savingEditRef.current = false;
-    }
-  }, [editDraft, editingId]);
 
   const view = (
     <JournalView
@@ -462,7 +414,7 @@ export default function Journal({ preview = false, scrollDismissRef }: JournalPr
       onEditDraftChange={setEditDraft}
       onSaveEdit={saveEdit}
       exitingId={exitingId}
-      onExitComplete={finishDeleteExit}
+      onExitComplete={finishExit}
     />
   );
 
