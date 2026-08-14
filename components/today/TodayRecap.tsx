@@ -1,7 +1,7 @@
 import { StyleSheet, Text, View } from "react-native";
 import { colors, layout, screen, textStyles } from "../../constants";
 import Watermark from "../ui/Watermark";
-import { receiveCopy, ReceiveQuote } from "./receive";
+import { receiveCopy, ReceiveLandingQuote } from "./receive";
 
 /**
  * Reserves the ponder-hint band below the quote (same gap + line height as Receive)
@@ -33,7 +33,7 @@ export default function TodayRecap() {
           <Text style={textStyles.screenTitle}>Today</Text>
           <View style={styles.quoteStage}>
             <View style={styles.centerCluster}>
-              <ReceiveQuote text={receiveCopy.quote} />
+              <ReceiveLandingQuote text={receiveCopy.quote} />
               <RecapHintSlot />
             </View>
           </View>

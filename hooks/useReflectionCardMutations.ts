@@ -42,7 +42,7 @@ export function useReflectionCardMutations({
     setEditDraft(reflection.response);
   }, []);
 
-  /** UI first: collapse card; API + list patch run in finishExit / onExitComplete. */
+  /** UI first: collapse card; API + list patch run in finishExit. */
   const startExit = useCallback((pending: ReflectionExitPending) => {
     pendingExitRef.current = pending;
     setExitingId(pending.reflection.id);
@@ -113,13 +113,10 @@ export function useReflectionCardMutations({
     editingId,
     editDraft,
     setEditDraft,
-    onEditDraftChange: setEditDraft,
     exitingId,
     beginEdit,
     saveEdit,
-    onSaveEdit: saveEdit,
     startExit,
     finishExit,
-    onExitComplete: finishExit,
   };
 }

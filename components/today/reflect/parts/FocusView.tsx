@@ -38,6 +38,7 @@ import {
   getReflectionVisibilityPreference,
   setReflectionVisibilityPreference,
 } from "../../../../lib/reflectionPreferences";
+import { moderateReflection } from "../../../../lib/moderationService";
 
 export type FocusChoice = {
   type: TodayQuestion["type"];
@@ -76,6 +77,36 @@ const VISIBILITY_PAD = 2;
 const VISIBILITY_TRACK_W = VISIBILITY_BTN * 2 + VISIBILITY_GAP + VISIBILITY_PAD * 2;
 const TOGGLE_MS = 220;
 const TOGGLE_TIMING = { duration: TOGGLE_MS, easing: GROW_EASING };
+const MODERATION_HINT = "Let's keep reflections supportive and respectful. Try revising your response.";
+
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+/** Split response for light underline of moderation-flagged terms. */
+function responseHighlightSegments(
+  text: string,
+  flaggedTerms: string[],
+): { text: string; flagged: boolean }[] {
+  if (!text || flaggedTerms.length === 0) {
+    return [{ text, flagged: false }];
+  }
+  const unique = [
+    ...new Set(flaggedTerms.map((term) => term.trim()).filter(Boolean)),
+  ].sort((a, b) => b.length - a.length);
+  if (unique.length === 0) {
+    return [{ text, flagged: false }];
+  }
+  const pattern = new RegExp(`(${unique.map(escapeRegExp).join("|")})`, "gi");
+  const parts = text.split(pattern);
+  const lowered = new Set(unique.map((term) => term.toLowerCase()));
+  return parts
+    .filter((part) => part.length > 0)
+    .map((part) => ({
+      text: part,
+      flagged: lowered.has(part.toLowerCase()),
+    }));
+}
 
 /** Match ChoiceCard info row + purpose slot — Focus collapses this in sync with prompt. */
 function modeRowHeight(): number {
@@ -160,6 +191,8 @@ export default function FocusView({
   const [promptHeight, setPromptHeight] = useState(0);
   /** Once submit starts, keep “Saving…” — don’t flash back to Submit under the breath overlay. */
   const [saveLatched, setSaveLatched] = useState(false);
+  const [moderationHint, setModerationHint] = useState<string | null>(null);
+  const [flaggedTerms, setFlaggedTerms] = useState<string[]>([]);
   const isExitingRef = useRef(false);
   const inputRef = useRef<TextInputType>(null);
   const preferredVisibilityRef = useRef<ReflectionVisibility>("public");
@@ -168,15 +201,54 @@ export default function FocusView({
   const hasResponse = response.trim().length > 0;
   const showSaving = saveLatched || isSubmitting;
   const canSubmit = hasResponse && !showSaving;
+  const showFlaggedHighlight = flaggedTerms.length > 0;
+
+  /** 0 = stack handoff (full purpose chrome, centered prompt); 1 = focus settled. */
+  const progress = useSharedValue(0);
+  const animW = useSharedValue(cardWidth);
+  const animH = useSharedValue(cardHeight);
+  const promptTy = useSharedValue(0);
+  const responseOpacity = useSharedValue(0);
+  const toggleReveal = useSharedValue(0);
+  /** Underlines + revise note fade onto existing text (no TextInput children / no duplicate paste). */
+  const moderationOpacity = useSharedValue(0);
 
   const dismissKeyboard = useCallback(() => {
     inputRef.current?.blur();
     Keyboard.dismiss();
   }, []);
 
+  const clearModerationFeedback = useCallback(() => {
+    moderationOpacity.value = 0;
+    setModerationHint(null);
+    setFlaggedTerms([]);
+  }, [moderationOpacity]);
+
+  const handleResponseChange = useCallback(
+    (text: string) => {
+      setResponse(text);
+      clearModerationFeedback();
+    },
+    [clearModerationFeedback],
+  );
+
   const handleSubmit = useCallback(async () => {
     const trimmed = response.trim();
     if (!trimmed || showSaving) return;
+
+    const moderation = await moderateReflection(trimmed);
+    if (!moderation.allowed) {
+      setModerationHint(MODERATION_HINT);
+      setFlaggedTerms(moderation.flaggedTerms ?? []);
+      moderationOpacity.value = 0;
+      moderationOpacity.value = withTiming(1, {
+        duration: 280,
+        easing: Easing.out(Easing.quad),
+      });
+      return;
+    }
+
+    clearModerationFeedback();
     setSaveLatched(true);
     try {
       await onSubmitResponse({ mode, prompt, response: trimmed, visibility });
@@ -188,15 +260,17 @@ export default function FocusView({
       // Parent owns error UI; allow retry after a failed save.
       setSaveLatched(false);
     }
-  }, [dismissKeyboard, mode, onSubmitResponse, prompt, response, showSaving, visibility]);
-
-  /** 0 = stack handoff (full purpose chrome, centered prompt); 1 = focus settled. */
-  const progress = useSharedValue(0);
-  const animW = useSharedValue(cardWidth);
-  const animH = useSharedValue(cardHeight);
-  const promptTy = useSharedValue(0);
-  const responseOpacity = useSharedValue(0);
-  const toggleReveal = useSharedValue(0);
+  }, [
+    clearModerationFeedback,
+    dismissKeyboard,
+    mode,
+    moderationOpacity,
+    onSubmitResponse,
+    prompt,
+    response,
+    showSaving,
+    visibility,
+  ]);
 
   // Reveal from response text only — do not hide toggle while isSubmitting (avoids flash).
   useEffect(() => {
@@ -222,9 +296,12 @@ export default function FocusView({
     setVisibility(preferredVisibilityRef.current);
     setPromptHeight(0);
     setSaveLatched(false);
+    moderationOpacity.value = 0;
+    setModerationHint(null);
+    setFlaggedTerms([]);
     growStartedRef.current = false;
     isExitingRef.current = false;
-  }, [mode]);
+  }, [mode, moderationOpacity]);
 
   useEffect(() => {
     if (isExitingRef.current) return;
@@ -309,6 +386,10 @@ export default function FocusView({
     transform: [{ translateX: (1 - toggleReveal.value) * -16 }],
   }));
 
+  const moderationFadeStyle = useAnimatedStyle(() => ({
+    opacity: moderationOpacity.value,
+  }));
+
   const responseTopPad =
     focusChromeHeight() + Math.max(promptHeight, scaleLineHeight("body")) + spacing.md;
 
@@ -380,19 +461,57 @@ export default function FocusView({
                   { paddingTop: responseTopPad },
                 ]}
               >
-                <TextInput
-                  ref={inputRef}
-                  value={response}
-                  onChangeText={setResponse}
-                  placeholder="Respond here..."
-                  placeholderTextColor={colors.textMuted}
-                  style={[font("regular"), styles.responseInput, textSize("md")]}
-                  multiline
-                  textAlignVertical="top"
-                  returnKeyType="done"
-                  blurOnSubmit
-                  onSubmitEditing={dismissKeyboard}
-                />
+                <View style={styles.responseField}>
+                  <TextInput
+                    ref={inputRef}
+                    value={response}
+                    onChangeText={handleResponseChange}
+                    placeholder="Respond here..."
+                    placeholderTextColor={colors.textMuted}
+                    style={[font("regular"), styles.responseInput, textSize("md")]}
+                    multiline
+                    textAlignVertical="top"
+                    returnKeyType="done"
+                    blurOnSubmit
+                    onSubmitEditing={dismissKeyboard}
+                  />
+                  {showFlaggedHighlight ? (
+                    <Animated.Text
+                      pointerEvents="none"
+                      style={[
+                        font("regular"),
+                        textSize("md"),
+                        styles.responseHighlightOverlay,
+                        moderationFadeStyle,
+                      ]}
+                    >
+                      {responseHighlightSegments(response, flaggedTerms).map((segment, index) => (
+                        <Text
+                          key={`${index}-${segment.text}`}
+                          style={
+                            segment.flagged
+                              ? styles.flaggedTermUnderline
+                              : styles.highlightOverlayPlain
+                          }
+                        >
+                          {segment.text}
+                        </Text>
+                      ))}
+                    </Animated.Text>
+                  ) : null}
+                </View>
+                {moderationHint ? (
+                  <Animated.Text
+                    style={[
+                      font("regular"),
+                      textSize("sm"),
+                      styles.moderationHint,
+                      moderationFadeStyle,
+                    ]}
+                  >
+                    {moderationHint}
+                  </Animated.Text>
+                ) : null}
               </Animated.View>
             </View>
           </CardShell>
@@ -510,6 +629,11 @@ const styles = StyleSheet.create({
     minHeight: 0,
     zIndex: 0,
   },
+  responseField: {
+    flex: 1,
+    minHeight: 120,
+    position: "relative",
+  },
   responseInput: {
     flex: 1,
     color: colors.text,
@@ -517,6 +641,27 @@ const styles = StyleSheet.create({
     paddingHorizontal: 0,
     paddingVertical: spacing.xs,
     minHeight: 120,
+  },
+  /** Same box as TextInput; transparent glyphs so only underlines paint over existing text. */
+  responseHighlightOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    paddingHorizontal: 0,
+    paddingVertical: spacing.xs,
+    color: "transparent",
+  },
+  highlightOverlayPlain: {
+    color: "transparent",
+  },
+  flaggedTermUnderline: {
+    color: "transparent",
+    textDecorationLine: "underline",
+    textDecorationColor: "#b91c1c",
+  },
+  moderationHint: {
+    color: "#9f1239",
+    marginTop: spacing.xs,
+    textAlign: "left",
+    alignSelf: "stretch",
   },
   /** Match ReflectCardStack arrowsRow so the card slot shares the same vertical center. */
   footerRow: {

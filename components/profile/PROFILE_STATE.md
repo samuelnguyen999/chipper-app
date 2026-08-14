@@ -16,7 +16,7 @@
 | Asset manifest | `logoAssets.generated.ts` | **Auto-generated** — static `require()` for Logos + Merch. Do not edit by hand. |
 | Asset wrapper | `logoAssets.ts` | Re-exports `profileLogos` + `ProfileLogo` type; sync workflow. |
 | Grid tuning | `config.ts` | `profileGalleryLayout` (columns, tile aspect, padding). |
-| Fonts | `FontPresetContext.tsx`, `FontPresetCycleButton.tsx` | App-wide font/size presets (provider in root layout). |
+| Fonts | `FontPresetContext.tsx`, `FontPresetCycleButton.tsx` | App-wide font/size presets (`FontPresetProvider` in root; no remount key on cycle; screens subscribe via `useFontPresetSubscription`). |
 | Generator | `scripts/generate-logo-assets.mjs` | Scan assets → `logoAssets.generated.ts`. |
 | Public API | `index.ts` | `LogoGallery`, `Journal`, font exports. |
 
@@ -29,7 +29,7 @@
 ```
 app/(tabs)/profile.tsx
   ScrollView
-    header ("Your Profile" + FontPresetCycleButton)
+    header ("Profile" + FontPresetCycleButton)
     <Journal preview />     // today's card + Open
     <LogoGallery embedded />
 ```

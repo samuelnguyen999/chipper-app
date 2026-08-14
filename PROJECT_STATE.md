@@ -1,18 +1,10 @@
 # PROJECT_STATE.md
 
-
-
 **Instructions for AI / new agents:** Read this file at the start of a session before large changes. It summarizes stack, layout, conventions, what’s done, known issues, and sensible next steps.
-
-
 
 ---
 
-
-
 ## Stack
-
-
 
 | Layer | Choice |
 |-------|--------|
@@ -26,17 +18,13 @@
 | TypeScript | **strict**, `tsconfig` extends `expo/tsconfig.base` |
 | Deep linking | **`app.json` → `expo.scheme`: `chipperapp`** |
 | Backend | **Supabase** (`@supabase/supabase-js`) — anonymous auth; see **`lib/SUPABASE_STATE.md`** |
-| Local storage (auth) | **@react-native-async-storage/async-storage** — Supabase session persistence |
-
-
+| Local storage | **@react-native-async-storage/async-storage** — auth session, fonts, visibility, offline queue, acknowledgements, onboarding date |
+| Connectivity | **@react-native-community/netinfo** |
+| Client moderation | **leo-profanity** — used only via **`lib/moderationService.ts`** |
 
 **Expo Go note:** Reanimated 4 + Worklets need an **Expo Go build that matches SDK 54**. Native `Worklets` / `installTurboModule` crashes → align Go ↔ SDK, `npx expo start -c`, or a **development build**.
 
-
-
 ---
-
-
 
 ## Architecture (hierarchical)
 
@@ -44,7 +32,7 @@
 
 | Path | Responsibility |
 |---|---|
-| `app/_layout.tsx` | Root `Stack`; `useAnonymousAuth` + fonts gate splash; `OfflineReflectionSync`; wraps `TabAccessProvider`, `FontPresetProvider`. |
+| `app/_layout.tsx` | Root `Stack`; `useAnonymousAuth` + fonts gate splash; `OfflineReflectionSync`; wraps `TabAccessProvider`, `FontPresetProvider`; hosts `BreathUnlockHost`. |
 | `app/index.tsx` | Startup gate; redirects to `/(locked)` or `/(tabs)` after tab-access hydration. |
 
 ### 2) Route groups by app phase
@@ -53,39 +41,43 @@
 |---|---|---|
 | `/(locked)` | Pre-unlock Today-only experience. | `app/(locked)/_layout.tsx`, `app/(locked)/index.tsx` |
 | `/(tabs)` | Post-unlock tab shell (`index`, `community`, `profile`). | `app/(tabs)/_layout.tsx`, tab screens |
-| Other app routes | Full Journal + fallbacks. | `app/journal.tsx`, `app/+not-found.tsx`, `app/post/[id].tsx` (placeholder) |
+| Other app routes | Full Journal + fallbacks. | `app/journal.tsx`, `app/+not-found.tsx`, `app/post/[id].tsx` (stub UI) |
 
 ### 3) Navigation behavior and safeguards
 
 | Concern | Where | Notes |
 |---|---|---|
 | Tab route registration | `app/(tabs)/_layout.tsx` | `withLayoutContext(..., true)` ensures only explicit `Tabs.Screen` entries are mounted. |
-| Unlock transition | `components/today/reflect/Reflect.tsx` + `app/(locked)/index.tsx` | First valid reflection submit calls `unlockMainTabs()` and replaces to `/(tabs)`. |
-| Locked-route fallback | `state/useRedirectWhenTabsLocked.ts` | Tabs screens redirect back to `/(locked)` if focused while locked. |
+| Unlock + breath | `Reflect.tsx` → `breathUnlock` module → root `BreathUnlockHost` | Submit unlock starts breath overlay; host navigates under cover to Community, then settles. |
+| Locked-route fallback | `state/useRedirectWhenTabsLocked.ts` | Tab/journal screens redirect to `/(locked)` if focused while locked. |
 
 ### 4) Feature boundaries
 
 | Feature | Folder | Notes |
 |---|---|---|
-| Today (experience + recap) | `components/today/` | Hosts locked flow and post-unlock recap surface. |
-| Receive | `components/today/receive/` | See **`RECEIVE_STATE.md`**. |
-| Reflect | `components/today/reflect/` | See **`REFLECT_STATE.md`** (online + offline submit). |
-| Shared cards | `components/cards/` | `ReflectionCard`, `CardShell`, `CardContainer` — Community/Journal adapters. |
-| Community | `components/community/` | Today's public reflections; online-only. |
-| Profile / Journal | `components/profile/` | Overview + gallery + Journal; see **`PROFILE_STATE.md`**. |
+| Today (experience + recap) | `components/today/` | Locked `TodayExperience`; post-unlock `TodayRecap`. |
+| Receive | `components/today/receive/` | Public names: `ReceiveLanding*` + `useLandingFlow` / `LandingPhase`. See **`RECEIVE_STATE.md`**. |
+| Reflect | `components/today/reflect/` | Lenses + `FocusView`; client moderation before save. See **`REFLECT_STATE.md`**. |
+| Shared cards | `components/cards/` | `ReflectionCard` (inline edit + exit wipe), `CardShell`, `CardContainer`. |
+| Card interactions | `components/interactions/` | `resolveCardActions` → `CardInteractionProvider` → `CardExpandedActions`. |
+| Community | `components/community/` | Today’s public rows; acknowledge chip / presence / purpose UI. |
+| Profile / Journal | `components/profile/` | Title **“Profile”**; gallery + Journal; fonts. See **`PROFILE_STATE.md`**. |
 
 ### 5) Shared modules and config surfaces
 
 | Area | Location | Notes |
 |---|---|---|
-| UI token system | `constants/` | Colors, spacing/layout, typography, scene shells. |
-| Supabase client + auth | `lib/supabase.ts`, `hooks/useAnonymousAuth.ts` | See **`lib/SUPABASE_STATE.md`**. |
-| Reflections (online) | `lib/reflections.ts` | `saveReflection`, `getTodaysCommunity`, `getMyReflections`. |
+| UI tokens | `constants/` | Colors, spacing/layout, typography Proxy (`textStyles`), scene shells. |
+| Fonts | `constants/fonts.ts`, `FontPresetContext` | Module active preset + React context; screens call `useFontPresetSubscription()`. |
+| Supabase + auth | `lib/supabase.ts`, `hooks/useAnonymousAuth.ts` | See **`lib/SUPABASE_STATE.md`**. |
+| Reflections (online) | `lib/reflections.ts` | save / update / delete / visibility / community / journal queries. |
 | Offline queue | `lib/offlineReflections.ts`, `hooks/useOfflineReflectionSync.ts` | See **`lib/OFFLINE_STATE.md`**. |
+| Card list mutations | `hooks/useReflectionCardMutations.ts` | Shared edit / save / exit-wipe session for Journal + Community. |
+| Acknowledgements | `lib/acknowledgementService.ts`, `lib/featureFlags.ts` | Reader-only; gated by `extra.acknowledgementsEnabled`. |
+| Moderation (client v1) | `lib/moderationService.ts` | `moderateReflection` before Reflect submit; no server layer yet. |
 | Visibility preference | `lib/reflectionPreferences.ts` | Device-local public/private default for Reflect. |
-| Runtime app config | `app.json`, `babel.config.js` | Linking/scheme, **`devStartAt`**. |
-| Package/runtime definitions | `package.json` | Includes NetInfo for connectivity. |
-| Static assets | `assets/` | Icons, Logos, Merch, fonts. |
+| Breath unlock bridge | `state/breathUnlock.ts` | Module store so overlay survives route replace. |
+| Runtime config | `app.json`, `babel.config.js` | Linking/scheme, **`devStartAt`**. |
 
 ### 6) Detailed flow docs
 
@@ -97,36 +89,69 @@
 
 **Gotcha:** Never pass a raw `{ screenOptions: ... }` object as a child of `<Stack>`; use `Stack.Screen` children and navigator props.
 
+---
 
+## Cross-cutting systems (current)
 
+### Card interactions pipeline
+
+```
+Screen (Journal | Community)
+  → CardInteractionProvider(handlers)
+  → hold → openCardActions → resolveCardActions (ownership / today / feature rules)
+  → CardExpandedActions (presentation only)
+  → ReflectionCard (inline TextInput edit surface; exit wipe animation)
+```
+
+- **Rules:** `resolveCardActions` only.
+- **List mutations (edit / save / delete / private-exit):** `useReflectionCardMutations` — returns `beginEdit`, `saveEdit`, `startExit`, `finishExit`, `setEditDraft`, ids. Screens compose visibility / acknowledge policy themselves.
+- **Journal visibility:** in-place `updateReflectionVisibility` (private rows stay).
+- **Community make-private:** `startExit({ kind: "private" })` then API in `finishExit` after wipe (same motion as delete).
+- **Do not** move edit UI into `CardExpandedActions`.
+
+### Acknowledgements
+
+- Intentional **reader-only** practice — not a social metric; writer is never notified.
+- Client daily limit via AsyncStorage (`acknowledgementService`); local chip on Community cards.
+- Optional presence moment / purpose copy when enabled via feature flag.
+- No public count on reflections.
+
+### Moderation (Reflect submit)
+
+- `FocusView` → `moderateReflection(response)` → continue existing save/unlock only when `allowed`.
+- v1: client expanded blacklist from **leo-profanity** (+ simple `s` / `ing` / `er` forms); inline revise hint + underline; typed text preserved.
+- Architecture ready for a future server pass inside `moderationService` without changing FocusView’s call shape.
+
+### Anonymous auth
+
+- Root `useAnonymousAuth`: ensure anonymous session, persist in AsyncStorage, recover stale JWT (sign out + new anonymous user).
+- Splash waits on `fontsReady && !authLoading`.
+
+### Breath unlock
+
+- After first successful submit (online, offline queue, or handled duplicate), breath overlay covers navigation to tabs.
+- `state/breathUnlock.ts` + root `BreathUnlockHost` + `BreathUnlockOverlay` — presentational settle to tab dock height.
+
+### Fonts
+
+- `FontPresetProvider` in root; **no remount `key` on preset/size** (avoids reshuffling gallery / resetting watermarks).
+- `textStyles` Proxy rebuilds styles at read time from module active preset/size.
+- Screens that render `textStyles` call **`useFontPresetSubscription()`** so they re-render (not remount) on cycle.
+- Profile cycles via `FontPresetCycleButton`.
 
 ---
 
-
-
 ## What’s completed (recent / structuring)
 
-
-
-- **Feature folders:** **`components/today/receive/`**, **`components/today/reflect/`**, **`components/today/`**, and **`components/community/`**.
-
-- **Centralized scene styling:** **`constants/screen.ts`** + **`layout.*`** + **`textStyles.screenSubtitle`** aligned across Community, Reflect, Profile, **`reflect/parts/FocusView`**.
-
-- **Receive landing:** Hero slide, quote fade, ponder band, **`ReceiveLandingPonderCtaSlot`** dock matched to tab bar height/safe area.
-
-- **Pre-unlock isolation:** separate `/(locked)` route group hosts **TodayExperience** only; after first submit, `router.replace('/(tabs)')` enters full tabs.
-
-- **Reflect:** Lenses under `components/today/reflect/`; submit → Supabase or offline queue; unlock after either path.
-
-- **Shared cards:** `components/cards/` (`ReflectionCard` / `CardShell`); Community + Journal adapters.
-
-- **Community:** Today's public rows via `getTodaysCommunity()`; offline message; no Community cache.
-
-- **Profile / Journal:** Preview (today) + full `/journal`; merge pending offline; full Journal shows connect message when history unavailable.
-
-- **Offline V1:** `lib/offlineReflections.ts` + reconnect/startup sync — see **`lib/OFFLINE_STATE.md`**.
-
-- **Supabase anonymous auth:** Stale JWT recovery; sessions in AsyncStorage.
+- Feature folders: receive / reflect / today / community / cards / interactions / profile.
+- Locked Today vs tabs Today split; breath unlock under-cover navigation.
+- Shared reflection cards + hold actions; edit / delete / visibility wired (not placeholders).
+- Journal + Community share `useReflectionCardMutations`; screen-owned policies remain separate.
+- Community acknowledgements (flag-gated), presence/purpose UI.
+- Client reflection moderation before save.
+- Offline V1 queue + sync; anonymous auth with stale recovery.
+- Font presets/sizes with subscription (no tree remount on cycle).
+- Receive landing + Today recap; Reflect lenses + FocusView.
 
 ---
 
@@ -138,7 +163,9 @@
 | **`.env` required for Supabase** | Dev | Copy `.env.example` → `.env`; restart Expo after changes. |
 | **Expo Go vs Reanimated/Worklets** | Runtime | Mismatch → TurboModule/worklets crash; align SDK / clear cache / dev build. |
 | **Deep link / URL to Community while locked** | Low | **`useRedirectWhenTabsLocked`** sends user to Today. |
-| **Root Stack `screenOptions` footgun** | Dev | Invalid extra children on `<Stack>` still a React pitfall. |
+| **Optimistic delete / private exit** | Medium | Row removed before API; failure only logs — no restore. |
+| **New screen forgetting font subscription** | Dev | `textStyles` can look stale until `useFontPresetSubscription()` is added. |
+| **`post/[id].tsx` stub** | Low | Placeholder UI; not product-complete. |
 | **No automated tests** | Process | No in-repo test runner at time of writing. |
 
 ---
@@ -149,22 +176,17 @@
 
 2. **Reflect / Today** — Product choice: back from Reflect to reset receive flow, or keep linear forward-only.
 
-3. **Card hold interactions** — hold → resolve → sheet; visibility + quiet acknowledgements. Edit/delete still placeholders.
+3. **Acknowledgements** — Optional server persistence for cross-device continuity (still reader-only; never public counts or author notification).
 
-   **Acknowledgements** are intentionally private. They exist as a user practice, not a social metric. The acknowledgement is known only to the reader (the person who acknowledges), never to the writer.
+4. **Moderation** — Optional server pass inside `moderateReflection` (same result shape).
 
-   - **Current:** AsyncStorage daily limit (3); local chip mark for the reader only.
-   - **Future:** Possible server persistence if product requires continuity across devices — still reader-only, never a public count or author notification.
+5. **Production linking / EAS** — Validate **`scheme`** with dev client builds.
 
-4. **Production linking / EAS** — Validate **`scheme`** with dev client builds.
+6. **`post/[id].tsx`** — Implement or remove.
 
-5. **`post/[id].tsx`** — Implement or remove.
+7. **Lint/format CI** — ESLint + CI if the team grows.
 
-6. **Lint/format CI** — ESLint + CI if the team grows.
-
-7. **Offline V2** (only if needed) — see out-of-scope in **`lib/OFFLINE_STATE.md`**.
-
-
+8. **Offline V2** (only if needed) — see out-of-scope in **`lib/OFFLINE_STATE.md`**.
 
 ---
 
@@ -222,42 +244,21 @@ Older booleans still map for compatibility but prefer **`devStartAt`**:
 
 ## Quick commands
 
-
-
 ```bash
-
 npx expo start -c       # Metro + cache reset (does not clear auth AsyncStorage on device)
-
 cp .env.example .env    # first-time Supabase setup (Windows: copy .env.example .env)
-
 npx expo install <pkg>  # Expo-pinned versions
-
 npx tsc --noEmit        # Typecheck
-
 ```
 
-
-
 ---
-
-
 
 ## Changelog-worthy context
 
-
-
 - **SDK 54** chosen for Store **Expo Go** compatibility (vs brief SDK 55 experiment).
-
 - **Material top tabs** at bottom for carousel-style horizontal navigation.
-
-- **Tab swipe lock:** `withLayoutContext(..., true)` to avoid Expo injecting every `(tabs)` file as a route; explicit **`swipeEnabled`/`animationEnabled`** on every **`Tabs.Screen`** (focused route’s options must not leave swipe **`undefined`** or TabView defaults to **swipe on**); **`useRedirectWhenTabsLocked`** on Community/Profile as a fallback.
-
-
+- **Tab swipe lock:** `withLayoutContext(..., true)` to avoid Expo injecting every `(tabs)` file as a route; explicit **`swipeEnabled`/`animationEnabled`** on every **`Tabs.Screen`**; **`useRedirectWhenTabsLocked`** on Community/Profile as a fallback.
 
 ---
 
-
-
 *Update this file when architecture or major flows change.*
-
-

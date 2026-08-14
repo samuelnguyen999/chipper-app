@@ -17,7 +17,7 @@
 | Quote data | `quotes/dailyQuotes.ts` | Quote pools keyed by `DailyTheme`; `getQuoteForTheme(theme, date)`. |
 | Quote pools | `quotes/<lane>.ts` | One `readonly string[]` per lane (edit here for content). |
 | Atoms | `parts/*` | Presentational only — no phase logic. |
-| Public API | `index.ts` | Barrel; keeps **`useReceiveLandingFlow`** / **`ReceiveLandingPhase`** as aliases for older imports. |
+| Public API | `index.ts` | Barrel: default `Landing`, `useLandingFlow` / `LandingPhase`, `ReceiveLanding*` parts, `receiveCopy` / `receiveTiming`. |
 
 **Design rule:** `flow.ts` owns **state transitions**; `landing.tsx` owns **motion tied to phase** and must not advance phases except via `completeHeadingSlide` and what `flow` already schedules.
 
@@ -57,9 +57,9 @@
 ## Integration points (rest of app)
 
 - **`components/today/TodayExperience.tsx`** — default-imports `./receive` (i.e. `Landing`). Toggles Reflect after CTA.
-- **`components/today/TodayRecap.tsx`** — imports `receiveCopy` + `ReceiveQuote`; recap shows **same** `receiveCopy.quote` string as Receive (see limitation below). Optional full-bleed **`Watermark`** (`surface="today"`) — see **`constants/watermarks.ts`**.
+- **`components/today/TodayRecap.tsx`** — imports `receiveCopy` + `ReceiveLandingQuote`; recap shows **same** `receiveCopy.quote` string as Receive (see limitation below). Optional full-bleed **`Watermark`** (`surface="today"`) — see **`constants/watermarks.ts`**.
 - **`components/today/dailyContent.ts`** — central resolver for theme, quote, and reflection questions (Reflect consumes questions via `reflect/config.ts` ← `questions.ts`).
-- **`constants`** — `layout.receiveLandingPaddingTop`, `layout.tabBarDock*`, `screen.*` shared with tab dock styling in `parts/PonderCtaSlot`.
+- **`constants`** — `layout.receiveLandingPaddingTop`, `layout.tabBarDock*`, `screen.*` shared with tab dock styling in `parts/PonderCtaSlot` (`ReceiveLandingPonderCtaSlot`).
 - **`landing.tsx`** may host **`Watermark`** (`surface="receive"`); unused tab surfaces stay `null` in the watermark map until enabled.
 ---
 
@@ -70,8 +70,8 @@
 | **Clear split:** `flow` vs `landing` is easy to reason about and test mentally. | **Phase ↔ animation coupling:** If `completeHeadingSlide` is never called (Reanimated bug / early unmount), user can stall in `heading_sliding`. |
 | **Typed quote pools** — themes, no giant `.txt`, IDE refactors and reviews work well. | **All lanes load in one graph** — every `quotes/*.ts` is imported from `dailyQuotes.ts`; huge corpuses slow parse/typecheck (mitigation: split into subfolders + lazy `import()` later if needed). |
 | **Weekday themes** give predictable “theme of the day” without extra UI. | **Locale / TZ:** Uses device **local** calendar; travelers crossing midnight or DST edges get edge cases; no per-user timezone override. |
-| **Dock (`PonderCtaSlot`)** matches tab bar height math for visual continuity. | **Dock + safe area** is sensitive; changing `layout.tabBarDock*` affects Receive and tabs—coordinate changes. |
-| **Barrel aliases** reduce churn for older `useReceiveLandingFlow` imports. | Aliases add two names for the same hook/type—prefer `useLandingFlow` / `LandingPhase` in new code. |
+| **Dock (`ReceiveLandingPonderCtaSlot`)** matches tab bar height math for visual continuity. | **Dock + safe area** is sensitive; changing `layout.tabBarDock*` affects Receive and tabs—coordinate changes. |
+| **Single public naming:** `ReceiveLanding*` + `useLandingFlow` / `LandingPhase`. | — |
 
 ### Quote resolution caveat (important)
 
@@ -93,7 +93,6 @@
 | New quote lane | Add `quotes/<lane>.ts`, import in `quotes/dailyQuotes.ts`, extend `DailyTheme` / `WEEKDAY_TO_THEME` / `DAILY_QUOTES`. |
 | Per-user quote (saved preference) | Introduce a thin resolver in `config` or `dailyContent.ts` that reads context/storage **before** falling back to weekday logic; keep pools in `quotes/*.ts`. |
 | Lazy-loaded huge corpus | Replace eager imports in `dailyQuotes.ts` with `import()` + async state in a provider **only if** bundle size or startup becomes an issue—otherwise keep simple. |
-| Remove legacy aliases | `index.ts` — drop `useReceiveLandingFlow` / `ReceiveLandingPhase` re-exports after grep confirms no callers. |
 
 ---
 
