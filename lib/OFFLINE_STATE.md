@@ -1,6 +1,6 @@
 # Offline reflections (V1)
 
-**Instructions for AI / new agents:** Pending-reflection queue while offline. Read with `PROJECT_STATE.md`, `lib/SUPABASE_STATE.md`, and `components/profile/PROFILE_STATE.md`.
+**Instructions for AI / new agents:** Pending-reflection queue while offline. Day-to-day run/backend: **`README.md`**. Also read `PROJECT_STATE.md`, `lib/SUPABASE_STATE.md`, and `components/profile/PROFILE_STATE.md`.
 
 ---
 

@@ -30,11 +30,14 @@ yarn-error.*
 .DS_Store
 *.pem
 
-# local env files
+# local env files (secrets — never commit)
 .env
+.env.*
+!.env.example
 .env.local
 .env*.local
 supebase.env
+
 
 # build outputs
 build

@@ -1,19 +1,20 @@
 {
   "expo": {
-    "name": "my-app",
-    "slug": "my-app",
+    "name": "Chippers",
+    "slug": "chippers",
     "scheme": "chipperapp",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
+    "icon": "./assets/Logos/C.png",
     "userInterfaceStyle": "light",
     "splash": {
-      "image": "./assets/splash-icon.png",
+      "image": "./assets/Logos/Final Logo.png",
       "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
+      "backgroundColor": "#ead699"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.chippers.chippers"
     },
     "android": {
       "adaptiveIcon": {
@@ -30,7 +31,7 @@
       "expo-font"
     ],
     "extra": {
-      "appEnv": "development",
+      "appEnv": "production",
       "devStartAt": "reflect",
       "acknowledgementsEnabled": true
     }
