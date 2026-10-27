@@ -4,10 +4,12 @@
   },
   "build": {
     "development": {
-      "environment": "development"
+      "environment": "development",
+      "channel": "development"
     },
     "production": {
-      "environment": "production"
+      "environment": "production",
+      "channel": "production"
     }
   }
 }

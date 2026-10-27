@@ -1,4 +1,13 @@
-import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import {
+  cloneElement,
+  isValidElement,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type ReactElement,
+  type ReactNode,
+} from "react";
 import {
   Keyboard,
   LayoutChangeEvent,
@@ -28,6 +37,7 @@ import {
 import { lensColorForType } from "../today/reflect/config";
 import { useScrollRail } from "../ui/ScrollRail";
 import CardContainer from "./CardContainer";
+import type { SaveEditResult } from "../../hooks/useReflectionCardMutations";
 import { ACTION_DIVIDER_WIDTH } from "../interactions/CardExpandedActions";
 import CardShell, { CARD_SHELL_BORDER, CARD_SHELL_PADDING } from "./CardShell";
 import type { ReflectionCardData } from "./types";
@@ -46,7 +56,9 @@ type ReflectionCardProps = {
   editing?: boolean;
   editDraft?: string;
   onEditDraftChange?: (text: string) => void;
-  onSaveEdit?: () => void | Promise<void>;
+  onSaveEdit?: () => void | Promise<SaveEditResult | void>;
+  /** Shown under the draft when an edit is rejected by the content filter. */
+  editRejected?: boolean;
   /** Delete exit: bottom edge rises to top until the card is gone. */
   exiting?: boolean;
   onExitComplete?: () => void;
@@ -65,6 +77,8 @@ const LIST_ITEM_GAP = layout.screenColumnGap;
 export const ACTIONS_SLOT_HEIGHT = 44;
 /** Extra space above the keyboard when revealing an editing card. */
 const KEYBOARD_REVEAL_PAD = 12;
+const EDIT_MODERATION_MESSAGE =
+  "Let's keep reflections supportive and respectful. Try revising your response.";
 
 export default function ReflectionCard({
   card,
@@ -75,6 +89,7 @@ export default function ReflectionCard({
   editDraft,
   onEditDraftChange,
   onSaveEdit,
+  editRejected = false,
   exiting = false,
   onExitComplete,
 }: ReflectionCardProps) {
@@ -116,6 +131,16 @@ export default function ReflectionCard({
   }, [expanded, footer]);
 
   useEffect(() => {
+    if (!exiting) return;
+    setSlotFooter((current) => {
+      if (!isValidElement(current)) return current;
+      return cloneElement(current as ReactElement<{ instantExit?: boolean }>, {
+        instantExit: true,
+      });
+    });
+  }, [exiting]);
+
+  useEffect(() => {
     if (expanded) {
       progress.value = withTiming(1, {
         duration: EXPAND_MS,
@@ -123,6 +148,10 @@ export default function ReflectionCard({
       });
       return;
     }
+
+    // The card wipe clips the band with the card. A separate collapse would
+    // unmount it and let its fade play after the wipe.
+    if (exiting) return;
 
     progress.value = withTiming(
       0,
@@ -133,7 +162,7 @@ export default function ReflectionCard({
         }
       },
     );
-  }, [expanded, progress]);
+  }, [expanded, exiting, progress]);
 
   useEffect(() => {
     if (!expanded || !scrollRail) return;
@@ -265,23 +294,33 @@ export default function ReflectionCard({
                 “{card.prompt}”
               </Text>
               {editing ? (
-                <TextInput
-                  value={draft}
-                  onChangeText={onEditDraftChange}
-                  onSubmitEditing={() => void onSaveEdit?.()}
-                  onBlur={() => void onSaveEdit?.()}
-                  autoFocus
-                  multiline
-                  blurOnSubmit
-                  returnKeyType="done"
-                  textAlignVertical="top"
-                  selection={selection}
-                  onSelectionChange={() => {
-                    if (selection != null) setSelection(undefined);
-                  }}
-                  style={[textStyles.body, styles.responseInput]}
-                  accessibilityLabel="Edit reflection response"
-                />
+                <>
+                  <TextInput
+                    value={draft}
+                    onChangeText={onEditDraftChange}
+                    onSubmitEditing={() => void onSaveEdit?.()}
+                    onBlur={() => void onSaveEdit?.()}
+                    autoFocus
+                    multiline
+                    blurOnSubmit
+                    returnKeyType="done"
+                    textAlignVertical="top"
+                    selection={selection}
+                    onSelectionChange={() => {
+                      if (selection != null) setSelection(undefined);
+                    }}
+                    style={[textStyles.body, styles.responseInput]}
+                    accessibilityLabel="Edit reflection response"
+                  />
+                  {editRejected ? (
+                    <Text
+                      style={[textStyles.caption, styles.editNotice]}
+                      accessibilityLiveRegion="polite"
+                    >
+                      {EDIT_MODERATION_MESSAGE}
+                    </Text>
+                  ) : null}
+                </>
               ) : (
                 <Text style={textStyles.body}>{card.response}</Text>
               )}
@@ -342,6 +381,10 @@ const styles = StyleSheet.create({
     padding: 0,
     margin: 0,
     color: colors.text,
+  },
+  editNotice: {
+    marginTop: spacing.sm,
+    marginBottom: 0,
   },
   actionsBand: {
     justifyContent: "center",

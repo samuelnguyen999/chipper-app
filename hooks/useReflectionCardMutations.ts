@@ -6,6 +6,7 @@ import {
   type SetStateAction,
 } from "react";
 import { Keyboard } from "react-native";
+import { moderateReflection } from "../lib/moderationService";
 import {
   deleteReflection,
   updateReflectionResponse,
@@ -13,7 +14,9 @@ import {
   type ReflectionRow,
 } from "../lib/reflections";
 
-export type ReflectionExitKind = "delete" | "private";
+export type SaveEditResult = "saved" | "rejected" | "failed" | "skipped";
+
+export type ReflectionExitKind = "delete" | "private" | "dismiss";
 
 export type ReflectionExitPending = {
   kind: ReflectionExitKind;
@@ -32,14 +35,21 @@ export function useReflectionCardMutations({
   setReflections,
 }: UseReflectionCardMutationsArgs) {
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [editDraft, setEditDraft] = useState("");
+  const [editDraft, setEditDraftState] = useState("");
+  const [editRejected, setEditRejected] = useState(false);
   const [exitingId, setExitingId] = useState<string | null>(null);
   const savingEditRef = useRef(false);
   const pendingExitRef = useRef<ReflectionExitPending | null>(null);
 
+  const setEditDraft = useCallback((text: string) => {
+    setEditDraftState(text);
+    setEditRejected(false);
+  }, []);
+
   const beginEdit = useCallback((reflection: ReflectionRow) => {
     setEditingId(reflection.id);
-    setEditDraft(reflection.response);
+    setEditDraftState(reflection.response);
+    setEditRejected(false);
   }, []);
 
   /** UI first: collapse card; API + list patch run in finishExit. */
@@ -70,6 +80,8 @@ export function useReflectionCardMutations({
       });
       setExitingId(null);
 
+      if (kind === "dismiss") return;
+
       try {
         if (kind === "delete") {
           await deleteReflection(reflection.id);
@@ -83,16 +95,22 @@ export function useReflectionCardMutations({
         );
       }
     },
-    [setReflections],
+    [setEditDraft, setReflections],
   );
 
-  const saveEdit = useCallback(async () => {
-    if (!editingId || savingEditRef.current) return;
+  const saveEdit = useCallback(async (): Promise<SaveEditResult> => {
+    if (!editingId || savingEditRef.current) return "skipped";
     const trimmed = editDraft.trim();
-    if (!trimmed) return;
+    if (!trimmed) return "skipped";
 
     savingEditRef.current = true;
     try {
+      const moderation = await moderateReflection(trimmed);
+      if (!moderation.allowed) {
+        setEditRejected(true);
+        return "rejected";
+      }
+
       const updated = await updateReflectionResponse(editingId, trimmed);
       setReflections((prev) =>
         prev.map((row) =>
@@ -100,10 +118,13 @@ export function useReflectionCardMutations({
         ),
       );
       setEditingId(null);
-      setEditDraft("");
+      setEditDraftState("");
+      setEditRejected(false);
       Keyboard.dismiss();
+      return "saved";
     } catch (error) {
       console.error("Edit reflection failed:", error);
+      return "failed";
     } finally {
       savingEditRef.current = false;
     }
@@ -113,6 +134,7 @@ export function useReflectionCardMutations({
     editingId,
     editDraft,
     setEditDraft,
+    editRejected,
     exitingId,
     beginEdit,
     saveEdit,

@@ -6,6 +6,10 @@ export type CardAction = {
   id: string;
   label: string;
   icon?: string;
+  /** Secondary items stay behind the ellipsis. Omitted items are primary. */
+  placement?: "primary" | "more";
+  /** Shown but not pressable. */
+  disabled?: boolean;
   onPress: () => void | Promise<void>;
 };
 

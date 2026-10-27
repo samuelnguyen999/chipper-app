@@ -14,7 +14,11 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.chippers.chippers"
+      "bundleIdentifier": "com.chippers.chippers",
+      "buildNumber": "2",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -33,7 +37,18 @@
     "extra": {
       "appEnv": "production",
       "devStartAt": "reflect",
-      "acknowledgementsEnabled": true
+      "acknowledgementsEnabled": true,
+      "router": {},
+      "eas": {
+        "projectId": "9890f3ca-5132-4b62-812b-ab336970d9e1"
+      }
+    },
+    "owner": "snguyen999",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/9890f3ca-5132-4b62-812b-ab336970d9e1"
     }
   }
 }

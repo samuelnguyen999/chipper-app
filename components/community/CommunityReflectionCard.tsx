@@ -1,4 +1,5 @@
 import { StyleSheet, View } from "react-native";
+import type { SaveEditResult } from "../../hooks/useReflectionCardMutations";
 import ReflectionCard from "../cards/ReflectionCard";
 import type { ReflectionCardData } from "../cards/types";
 import type { ReflectionRow } from "../../lib/reflections";
@@ -18,7 +19,8 @@ type CommunityReflectionCardProps = {
   editing?: boolean;
   editDraft?: string;
   onEditDraftChange?: (text: string) => void;
-  onSaveEdit?: () => void | Promise<void>;
+  onSaveEdit?: () => void | Promise<SaveEditResult | void>;
+  editRejected?: boolean;
   exiting?: boolean;
   onExitComplete?: () => void;
 };
@@ -43,6 +45,7 @@ export default function CommunityReflectionCard({
   editDraft,
   onEditDraftChange,
   onSaveEdit,
+  editRejected = false,
   exiting = false,
   onExitComplete,
 }: CommunityReflectionCardProps) {
@@ -61,6 +64,7 @@ export default function CommunityReflectionCard({
         editDraft={editDraft}
         onEditDraftChange={onEditDraftChange}
         onSaveEdit={onSaveEdit}
+        editRejected={editRejected}
         exiting={exiting}
         onExitComplete={onExitComplete}
       />

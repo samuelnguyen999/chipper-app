@@ -21,7 +21,10 @@ import {
 import ScrollRail from "../ui/ScrollRail";
 import JournalReflectionCard from "./JournalReflectionCard";
 import { useAnonymousAuth } from "../../hooks/useAnonymousAuth";
-import { useReflectionCardMutations } from "../../hooks/useReflectionCardMutations";
+import {
+  useReflectionCardMutations,
+  type SaveEditResult,
+} from "../../hooks/useReflectionCardMutations";
 
 type JournalGroupKey = "thisWeek" | "lastWeek" | "lastMonth" | "lastYear";
 
@@ -110,8 +113,14 @@ function groupReflectionsByRecency(
   return JOURNAL_GROUP_ORDER.filter((key) => buckets[key].length > 0).map((key) => ({
     key,
     label: JOURNAL_GROUP_LABELS[key],
-    items: buckets[key],
+    items: buckets[key].sort(compareNewestReflectionFirst),
   }));
+}
+
+function compareNewestReflectionFirst(a: ReflectionRow, b: ReflectionRow): number {
+  const byDate = b.reflection_date.localeCompare(a.reflection_date);
+  if (byDate !== 0) return byDate;
+  return b.created_at.localeCompare(a.created_at);
 }
 
 type LoadState = "pending" | "ready" | "error";
@@ -165,7 +174,8 @@ type JournalViewProps = {
   editingId: string | null;
   editDraft: string;
   onEditDraftChange: (text: string) => void;
-  onSaveEdit: () => void | Promise<void>;
+  onSaveEdit: () => void | Promise<SaveEditResult | void>;
+  editRejected: boolean;
   exitingId: string | null;
   onExitComplete: (reflectionId: string) => void;
 };
@@ -179,6 +189,7 @@ function JournalView({
   editDraft,
   onEditDraftChange,
   onSaveEdit,
+  editRejected,
   exitingId,
   onExitComplete,
 }: JournalViewProps) {
@@ -255,6 +266,7 @@ function JournalView({
             editDraft={editingId === todaysReflection.id ? editDraft : undefined}
             onEditDraftChange={onEditDraftChange}
             onSaveEdit={onSaveEdit}
+            editRejected={editingId === todaysReflection.id && editRejected}
             exiting={exitingId === todaysReflection.id}
             onExitComplete={() => onExitComplete(todaysReflection.id)}
           />
@@ -278,6 +290,7 @@ function JournalView({
                   editDraft={editingId === entry.id ? editDraft : undefined}
                   onEditDraftChange={onEditDraftChange}
                   onSaveEdit={onSaveEdit}
+                  editRejected={editingId === entry.id && editRejected}
                   exiting={exitingId === entry.id}
                   onExitComplete={() => onExitComplete(entry.id)}
                 />
@@ -318,6 +331,7 @@ export default function Journal({ preview = false, scrollDismissRef }: JournalPr
     editingId,
     editDraft,
     setEditDraft,
+    editRejected,
     exitingId,
     beginEdit,
     saveEdit,
@@ -413,6 +427,7 @@ export default function Journal({ preview = false, scrollDismissRef }: JournalPr
       editDraft={editDraft}
       onEditDraftChange={setEditDraft}
       onSaveEdit={saveEdit}
+      editRejected={editRejected}
       exitingId={exitingId}
       onExitComplete={finishExit}
     />

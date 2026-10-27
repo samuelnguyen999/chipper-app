@@ -27,6 +27,10 @@ export type ResolveCardActionHandlers = {
   delete?: (reflection: ReflectionRow) => void | Promise<void>;
   /** Quiet acknowledgement for another user's card. */
   acknowledge?: (reflection: ReflectionRow) => void | Promise<void>;
+  /** Report another user's public reflection. */
+  report?: (reflection: ReflectionRow) => void | Promise<void>;
+  /** Block another user locally. Omit to leave Block disabled. */
+  block?: (reflection: ReflectionRow) => void | Promise<void>;
 };
 
 /**
@@ -46,10 +50,31 @@ export function resolveCardActions(
   const isOwner = reflection.user_id === currentUserId;
 
   if (!isOwner) {
-    // Ghosted unless `expo.extra.acknowledgementsEnabled` is true in app.json.
+    const more: CardAction[] = [
+      {
+        id: "report",
+        label: "Report",
+        placement: "more",
+        onPress: handlers.report
+          ? () => handlers.report!(reflection)
+          : placeholder("report", reflection.id),
+      },
+      {
+        id: "block",
+        label: "Block",
+        placement: "more",
+        ...(handlers.block ? {} : { disabled: true }),
+        onPress: handlers.block
+          ? () => handlers.block!(reflection)
+          : () => {},
+      },
+    ];
+
+    // Acknowledge stays optional. Report/Block stay available when it is off.
     if (!isAcknowledgementsEnabled()) {
-      return [];
+      return more;
     }
+
     return [
       {
         id: "acknowledge",
@@ -58,6 +83,7 @@ export function resolveCardActions(
           ? () => handlers.acknowledge!(reflection)
           : placeholder("acknowledge", reflection.id),
       },
+      ...more,
     ];
   }
 

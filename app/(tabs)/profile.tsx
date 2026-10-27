@@ -1,5 +1,5 @@
-import { useRef } from "react";
-import { ScrollView, StyleSheet, Text, View } from "react-native";
+import { useCallback, useRef } from "react";
+import { Linking, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import LogoGallery, {
   FontPresetCycleButton,
   Journal,
@@ -8,10 +8,16 @@ import LogoGallery, {
 import { layout, screen, spacing, textStyles } from "../../constants";
 import { useRedirectWhenTabsLocked } from "../../state/useRedirectWhenTabsLocked";
 
+const SUPPORT_MAILTO =
+  "mailto:officialchippers@gmail.com?subject=" + encodeURIComponent("Chippers Support");
+
 export default function ProfileScreen() {
   useRedirectWhenTabsLocked();
   useFontPresetSubscription();
   const scrollDismissRef = useRef<(() => void) | null>(null);
+  const contactSupport = useCallback(() => {
+    Linking.openURL(SUPPORT_MAILTO).catch(() => {});
+  }, []);
 
   return (
     <ScrollView
@@ -26,6 +32,14 @@ export default function ProfileScreen() {
       </View>
       <Journal preview scrollDismissRef={scrollDismissRef} />
       <LogoGallery embedded />
+      <Pressable
+        accessibilityRole="link"
+        accessibilityLabel="Contact Support"
+        onPress={contactSupport}
+        style={styles.supportLink}
+      >
+        <Text style={[textStyles.caption, styles.supportLabel]}>Contact Support</Text>
+      </Pressable>
     </ScrollView>
   );
 }
@@ -43,5 +57,14 @@ const styles = StyleSheet.create({
   },
   title: {
     flex: 1,
+  },
+  supportLink: {
+    alignSelf: "center",
+    marginTop: spacing.lg,
+    paddingVertical: spacing.sm,
+  },
+  supportLabel: {
+    marginBottom: 0,
+    textDecorationLine: "underline",
   },
 });

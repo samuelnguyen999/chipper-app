@@ -1,5 +1,6 @@
 import { StyleSheet, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import type { SaveEditResult } from "../../hooks/useReflectionCardMutations";
 import ReflectionCard from "../cards/ReflectionCard";
 import type { ReflectionCardData } from "../cards/types";
 import { colors, layout, spacing } from "../../constants";
@@ -17,7 +18,8 @@ type JournalReflectionCardProps = {
   editing?: boolean;
   editDraft?: string;
   onEditDraftChange?: (text: string) => void;
-  onSaveEdit?: () => void | Promise<void>;
+  onSaveEdit?: () => void | Promise<SaveEditResult | void>;
+  editRejected?: boolean;
   exiting?: boolean;
   onExitComplete?: () => void;
 };
@@ -47,6 +49,7 @@ export default function JournalReflectionCard({
   editDraft,
   onEditDraftChange,
   onSaveEdit,
+  editRejected = false,
   exiting = false,
   onExitComplete,
 }: JournalReflectionCardProps) {
@@ -65,6 +68,7 @@ export default function JournalReflectionCard({
         editDraft={editDraft}
         onEditDraftChange={onEditDraftChange}
         onSaveEdit={onSaveEdit}
+        editRejected={editRejected}
         exiting={exiting}
         onExitComplete={onExitComplete}
       />

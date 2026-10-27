@@ -1,4 +1,5 @@
 import { Pressable, StyleSheet, Text, View } from "react-native";
+import { router } from "expo-router";
 import { colors, radii, spacing, textStyles } from "../../constants";
 import { useFontPreset } from "./FontPresetContext";
 
@@ -27,7 +28,7 @@ function PresetChip({ kicker, value, accessibilityLabel, onPress }: PresetChipPr
   );
 }
 
-/** Compact Font + Size chips for the profile header (top right). */
+/** Compact Font, Size, and Blocked Users chips for the profile header (top right). */
 export default function FontPresetCycleButton() {
   const { fontLabel, sizeLabel, cycleFontPreset, cycleFontSize } = useFontPreset();
 
@@ -44,6 +45,12 @@ export default function FontPresetCycleButton() {
         value={sizeLabel}
         accessibilityLabel={`Text size: ${sizeLabel}. Tap to cycle sizes.`}
         onPress={cycleFontSize}
+      />
+      <PresetChip
+        kicker="Blocked"
+        value="Users"
+        accessibilityLabel="Blocked users. Tap to manage blocked users."
+        onPress={() => router.push("/blocked-users")}
       />
     </View>
   );

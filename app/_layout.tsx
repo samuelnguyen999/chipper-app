@@ -68,6 +68,13 @@ export default function RootLayout() {
                 }}
               />
               <Stack.Screen
+                name="blocked-users"
+                options={{
+                  headerShown: true,
+                  headerTitle: "Blocked Users",
+                }}
+              />
+              <Stack.Screen
                 name="+not-found"
                 options={{
                   headerTitle: "Not Found",
