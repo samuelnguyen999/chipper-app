@@ -33,7 +33,7 @@ export default function TodayRecap() {
           <Text style={textStyles.screenTitle}>Today</Text>
           <View style={styles.quoteStage}>
             <View style={styles.centerCluster}>
-              <ReceiveLandingQuote text={receiveCopy.quote} />
+              <ReceiveLandingQuote text={receiveCopy.quote} selectable />
               <RecapHintSlot />
             </View>
           </View>

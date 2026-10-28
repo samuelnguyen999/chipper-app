@@ -3,12 +3,19 @@ import { spacing, textStyles } from "../../../../constants";
 
 type ReceiveLandingQuoteProps = {
   text: string;
+  /** Native iOS/Android text selection (long-press Copy). Off by default for onboarding. */
+  selectable?: boolean;
 };
 
-export default function ReceiveLandingQuote({ text }: ReceiveLandingQuoteProps) {
+export default function ReceiveLandingQuote({
+  text,
+  selectable = false,
+}: ReceiveLandingQuoteProps) {
   return (
     <View style={styles.wrap}>
-      <Text style={textStyles.bodyCenter}>{text}</Text>
+      <Text style={textStyles.bodyCenter} selectable={selectable}>
+        {text}
+      </Text>
     </View>
   );
 }
